@@ -47,7 +47,11 @@ lemma proximal_three_point_identity (ppm : ProximalPoint f f' t x₀) (k : ℕ) 
   have norm_identity : 2 * inner (ppm.x k - ppm.x (k + 1)) (x - ppm.x (k + 1)) =
       ‖ppm.x k - ppm.x (k + 1)‖ ^ 2 + ‖x - ppm.x (k + 1)‖ ^ 2 - ‖ppm.x k - x‖ ^ 2 := by
     have h : ppm.x k - x = (ppm.x k - ppm.x (k + 1)) - (x - ppm.x (k + 1)) := by abel
-    sorry
+    have expand : ‖(ppm.x k - ppm.x (k + 1)) - (x - ppm.x (k + 1))‖ ^ 2 =
+        ‖ppm.x k - ppm.x (k + 1)‖ ^ 2 - 2 * inner (ppm.x k - ppm.x (k + 1)) (x - ppm.x (k + 1)) + ‖x - ppm.x (k + 1)‖ ^ 2 := by
+      apply norm_sub_sq_real
+    rw [← h] at expand
+    linarith
   have norm_identity' : inner (ppm.x k - ppm.x (k + 1)) (x - ppm.x (k + 1)) =
       (‖ppm.x k - ppm.x (k + 1)‖ ^ 2 + ‖x - ppm.x (k + 1)‖ ^ 2 - ‖ppm.x k - x‖ ^ 2) / 2 := by
     have h := norm_identity
