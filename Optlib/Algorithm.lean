@@ -12,3 +12,4 @@ import Optlib.Algorithm.Nesterov.NesterovAccelerationSecond
 import Optlib.Algorithm.Nesterov.NesterovSmooth
 import Optlib.Algorithm.ProximalGradient
 import Optlib.Algorithm.SubgradientMethod
+import Optlib.ProximalPoint
