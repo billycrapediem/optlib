@@ -36,6 +36,9 @@ class proximal_gradient_method (f h: E → ℝ) (f' : E → E) (x₀ : E) :=
 
 variable {alg : proximal_gradient_method f h f' x₀}
 
+
+
+
 theorem proximal_gradient_method_converge : ∀ (k : ℕ+),
     (f (alg.x k) + h (alg.x k) - f alg.xm - h alg.xm)
     ≤ 1 / (2 * k * alg.t) * ‖x₀ - alg.xm‖ ^ 2 := by
