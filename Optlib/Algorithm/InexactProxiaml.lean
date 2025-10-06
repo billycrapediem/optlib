@@ -40,7 +40,44 @@ noncomputable def Gamma (ippm : InexactProximalPoint f f' σ x₀) (k : ℕ) (x 
 -- Lemma 1(a): Γₖ is a lower bound for f
 lemma inexact_proximal_lower_bound (ippm : InexactProximalPoint f f' σ x₀) (k : ℕ) :
     ∀ x : E, Gamma ippm k x ≤ f x := by
-  sorry
+  intro x
+  unfold Gamma v
+  simp
+
+  have subgrad := ippm.subgrad_cond k
+
+  rw [← mem_SubderivAt] at subgrad
+  have subgrad_ineq := subgrad x
+  unfold HasSubgradientAt at subgrad_ineq
+  simp at subgrad_ineq
+
+  have inv_eq : (ippm.lam k)⁻¹ = 1 / ippm.lam k := by field_simp
+  rw [inv_eq, real_inner_smul_left]
+
+  have hcalc :
+      f (ippm.x_tilde k)
+        + (1 / ippm.lam k) * inner (ippm.x (k - 1) - ippm.x k) (x - ippm.x_tilde k)
+        - ippm.eps k ≤
+      f x := by
+    calc
+      f (ippm.x_tilde k)
+          + (1 / ippm.lam k) * inner (ippm.x (k - 1) - ippm.x k) (x - ippm.x_tilde k)
+          - ippm.eps k
+        = (f (ippm.x_tilde k) + ippm.eps k * ‖ippm.x_tilde k‖^2 / 2)
+            + (1 / ippm.lam k) * inner (ippm.x (k - 1) - ippm.x k) (x - ippm.x_tilde k)
+            - ippm.eps k * ‖ippm.x_tilde k‖^2 / 2 - ippm.eps k := by ring
+
+    _ ≤ f x + ippm.eps k * ‖x‖^2 / 2 - ippm.eps k * ‖ippm.x_tilde k‖^2 / 2 - ippm.eps k := by
+      rw [inv_eq, real_inner_smul_left] at subgrad_ineq
+      linarith [subgrad_ineq]
+
+    _ = f x + ippm.eps k / 2 * (‖x‖^2 - ‖ippm.x_tilde k‖^2 - 2) := by ring
+
+    _ ≤ f x := by
+      have h : ippm.eps k / 2 * (‖x‖^2 - ‖ippm.x_tilde k‖^2 - 2) ≤ 0 := by sorry
+      linarith
+
+  exact (sub_le_iff_le_add).mp hcalc
 
 -- Lemma 1(b): Upper bound for the optimality gap
 lemma inexact_proximal_optimality_gap_bound (ippm : InexactProximalPoint f f' σ x₀) (k : ℕ) :
