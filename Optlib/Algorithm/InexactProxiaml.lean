@@ -43,7 +43,8 @@ noncomputable def v (ippm : InexactProximalPoint f f' σ x₀) (k : ℕ) : E :=
 
 noncomputable def Gamma (ippm : InexactProximalPoint f f' σ x₀) (k : ℕ) (x : E) : ℝ :=
   f (ippm.x_tilde k) + inner (v ippm k) (x - ippm.x_tilde k) - ippm.eps k
-
+noncomputable def objective (ippm : InexactProximalPoint f f' σ x₀) (k : ℕ) (x : E) : ℝ :=
+  ippm.lam k * Gamma ippm k x + 1/2 * ‖x - ippm.x (k - 1)‖^2
 -- Now Lemma 1(a) is provable
 lemma inexact_proximal_lower_bound (ippm : InexactProximalPoint f f' σ x₀) (k : ℕ) (hk : k > 0) :
     ∀ x : E, Gamma ippm k x ≤ f x := by
@@ -163,11 +164,66 @@ lemma inexact_proximal_optimality_gap_bound (ippm : InexactProximalPoint f f' σ
       _ ≤ (σ / (2 * ippm.lam k)) * ‖ippm.x_tilde k - ippm.x (k - 1)‖^2 + ippm.delta k / ippm.lam k :=
           apply_prox_condition ippm k hk
 
--- Lemma 1(c): xₖ minimizes the proximal subproblem
-lemma inexact_proximal_minimizer (ippm : InexactProximalPoint f f' σ x₀) (k : ℕ) :
-    IsMinOn (fun x ↦ ippm.lam k * Gamma ippm k x + 1/2 * ‖x - ippm.x (k - 1)‖^2) univ (ippm.x k) := by
+lemma gradient_linear_part (ippm : InexactProximalPoint f f' σ x₀) (k : ℕ) (x : E) :
+    HasGradientAt (fun y ↦ ippm.lam k * inner (v ippm k) (y - ippm.x_tilde k))
+      (ippm.lam k • v ippm k) x := by
   sorry
 
+lemma gradient_quadratic_part (ippm : InexactProximalPoint f f' σ x₀) (k : ℕ) (x : E) :
+    HasGradientAt (fun y ↦ 1/2 * ‖y - ippm.x (k - 1)‖^2)
+      (x - ippm.x (k - 1)) x := by
+  sorry
+
+lemma gradient_objective (ippm : InexactProximalPoint f f' σ x₀) (k : ℕ) (x : E) :
+    HasGradientAt (objective ippm k)
+      (ippm.lam k • v ippm k + (x - ippm.x (k - 1))) x := by
+  sorry
+
+lemma gradient_zero_at_iterate (ippm : InexactProximalPoint f f' σ x₀) (k : ℕ)
+    (hk : k > 0) :
+    ippm.lam k • v ippm k + (ippm.x k - ippm.x (k - 1)) = 0 := by
+  sorry
+
+lemma objective_strongly_convex (ippm : InexactProximalPoint f f' σ x₀) (k : ℕ)
+    (hk : k > 0) :
+    StrongConvexOn univ 1 (objective ippm k) := by
+  sorry
+
+lemma objective_convex (ippm : InexactProximalPoint f f' σ x₀) (k : ℕ)
+    (hk : k > 0) :
+    ConvexOn ℝ univ (objective ippm k) := by
+  sorry
+
+-- Main theorem
+lemma inexact_proximal_minimizer (ippm : InexactProximalPoint f f' σ x₀) (k : ℕ)
+    (hk : k > 0) :
+    IsMinOn (objective ippm k) univ (ippm.x k) := by
+  have h_convex : ConvexOn ℝ univ (objective ippm k) := objective_convex ippm k hk
+
+  have h_grad : HasGradientAt (objective ippm k)
+      (ippm.lam k • v ippm k + (ippm.x k - ippm.x (k - 1))) (ippm.x k) :=
+    gradient_objective ippm k (ippm.x k)
+
+  have h_grad_zero : ippm.lam k • v ippm k + (ippm.x k - ippm.x (k - 1)) = 0 :=
+    gradient_zero_at_iterate ippm k hk
+
+  rw [h_grad_zero] at h_grad
+
+  -- Show 0 ∈ SubderivAt (objective ippm k) (x k)
+  have h_subgrad_mem : 0 ∈ SubderivAt (objective ippm k) (ippm.x k) := by
+    have h_within : SubderivWithinAt (objective ippm k) univ (ippm.x k) = {0} := by
+      apply SubderivWithinAt_eq_gradient
+      · simp
+      · exact h_convex
+      · exact h_grad
+    have h_at : SubderivAt (objective ippm k) (ippm.x k) = {0} := by
+      simpa [Subderivat_eq_SubderivWithinAt_univ] using h_within
+    simpa [h_at]
+
+  -- Convert membership to HasSubgradientAt and finish
+  have h_subgrad : HasSubgradientAt (objective ippm k) 0 (ippm.x k) := by
+    simpa [mem_SubderivAt] using h_subgrad_mem
+  exact HasSubgradientAt_zero_iff_isMinOn.mp h_subgrad
 -- Lemma 1(d): Lower bound at the minimum
 lemma inexact_proximal_minimum_lower_bound (ippm : InexactProximalPoint f f' σ x₀) (k : ℕ) :
     sInf ((fun x ↦ ippm.lam k * Gamma ippm k x + 1/2 * ‖x - ippm.x (k - 1)‖^2) '' univ)
