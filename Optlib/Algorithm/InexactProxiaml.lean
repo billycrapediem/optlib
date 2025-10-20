@@ -9,6 +9,9 @@ open Set Finset
 
 noncomputable def f_star (f : E → ℝ) : ℝ := sInf (f '' univ)
 
+noncomputable def x_star (f : E → ℝ) (h : ∃ x_star : E, IsMinOn f univ x_star) : E :=
+  Classical.choose h
+
 variable (f_min_exists : ∃ x_star : E, IsMinOn f univ x_star)
 
 def EpsSubderivAt (f : E → ℝ) (x : E) (ε : ℝ) : Set E :=
@@ -354,3 +357,69 @@ theorem inexact_proximal_minimum_lower_bound (ippm : InexactProximalPoint f f' �
     _ ≥ ippm.lam k * f (ippm.x_tilde k) +
         (1 - σ) / 2 * ‖ippm.x_tilde k - ippm.x (k - 1)‖^2 -
         ippm.delta k := by linarith
+
+lemma objective_lower_bound_via_gamma (ippm : InexactProximalPoint f f' σ x₀) (k : ℕ)
+    (hk : k > 0) (x : E) :
+    ippm.lam k * f x + 1/2 * ‖x - ippm.x (k - 1)‖^2 ≥
+    ippm.lam k * Gamma ippm k x + 1/2 * ‖x - ippm.x (k - 1)‖^2 := by
+  have gamma_bound := inexact_proximal_lower_bound ippm k hk x
+  sorry
+
+-- Helper Lemma: Identity relating objective at x to minimum plus distance to xk
+lemma objective_decomposition (ippm : InexactProximalPoint f f' σ x₀) (k : ℕ)
+    (hk : k > 0) (x : E) :
+    ippm.lam k * Gamma ippm k x + 1/2 * ‖x - ippm.x (k - 1)‖^2 =
+    sInf ((objective ippm k) '' univ) + 1/2 * ‖x - ippm.x k‖^2 := by
+  -- The minimum equals objective at xk
+  rw [objective_infimum_at_iterate ippm k hk]
+  -- Use the identity we proved earlier
+  have h := objective_identity_with_norm ippm k hk x
+  unfold objective at h
+  sorry
+
+-- Main three-point inequality combining everything
+lemma three_point_inequality_with_minimum (ippm : InexactProximalPoint f f' σ x₀) (k : ℕ)
+    (hk : k > 0) (x : E) :
+    ippm.lam k * f x + 1/2 * ‖x - ippm.x (k - 1)‖^2 ≥
+    ippm.lam k * f (ippm.x_tilde k) + (1 - σ) / 2 * ‖ippm.x_tilde k - ippm.x (k - 1)‖^2 -
+    ippm.delta k + 1/2 * ‖x - ippm.x k‖^2 := by
+  calc ippm.lam k * f x + 1/2 * ‖x - ippm.x (k - 1)‖^2
+      ≥ ippm.lam k * Gamma ippm k x + 1/2 * ‖x - ippm.x (k - 1)‖^2 :=
+        objective_lower_bound_via_gamma ippm k hk x
+    _ = sInf ((objective ippm k) '' univ) + 1/2 * ‖x - ippm.x k‖^2 :=
+        objective_decomposition ippm k hk x
+    _ ≥ ippm.lam k * f (ippm.x_tilde k) + (1 - σ) / 2 * ‖ippm.x_tilde k - ippm.x (k - 1)‖^2 -
+        ippm.delta k + 1/2 * ‖x - ippm.x k‖^2 := by
+          have bound := inexact_proximal_minimum_lower_bound ippm k hk
+          linarith
+
+theorem inexact_proximal_lemma2 (ippm : InexactProximalPoint f f' σ x₀)
+    (f_min_exists : ∃ x_star : E, IsMinOn f univ x_star)
+    (k : ℕ) (hk : k > 0) :
+    ippm.lam k * (f (ippm.x_tilde k) - f (x_star f f_min_exists)) +
+    (1 - σ) / 2 * ‖ippm.x_tilde k - ippm.x (k - 1)‖^2
+    ≤ ippm.delta k + 1/2 * ‖ippm.x (k - 1) - x_star f f_min_exists‖^2 -
+      1/2 * ‖ippm.x k - x_star f f_min_exists‖^2 := by
+  let xstar := x_star f f_min_exists
+
+  have three_pt := three_point_inequality_with_minimum ippm k hk xstar
+  calc ippm.lam k * (f (ippm.x_tilde k) - f xstar) +
+       (1 - σ) / 2 * ‖ippm.x_tilde k - ippm.x (k - 1)‖^2
+      = ippm.lam k * f (ippm.x_tilde k) + (1 - σ) / 2 * ‖ippm.x_tilde k - ippm.x (k - 1)‖^2 -
+        ippm.lam k * f xstar := by ring
+    _ ≤ ippm.lam k * f xstar + 1/2 * ‖xstar - ippm.x (k - 1)‖^2 -
+        1/2 * ‖xstar - ippm.x k‖^2 -
+        ippm.lam k * f xstar + ippm.delta k := by linarith [three_pt]
+    _ = 1/2 * ‖xstar - ippm.x (k - 1)‖^2 - 1/2 * ‖xstar - ippm.x k‖^2 + ippm.delta k := by ring
+    _ = ippm.delta k + 1/2 * ‖ippm.x (k - 1) - xstar‖^2 - 1/2 * ‖ippm.x k - xstar‖^2 := by
+        rw [norm_sub_rev (ippm.x (k - 1)) xstar, norm_sub_rev (ippm.x k) xstar]
+        ring
+
+theorem inexact_proximal_convergence_rate (ippm : InexactProximalPoint f f' σ x₀)
+    (f_min_exists : ∃ x_star : E, IsMinOn f univ x_star)
+    (k : ℕ+) :
+    let Λ := ∑ i in Finset.range k, ippm.lam (i + 1)
+    let x_hat := Λ⁻¹ • (∑ i in Finset.range k, ippm.lam (i + 1) • ippm.x_tilde (i + 1))
+    let xstar := x_star f f_min_exists
+    f x_hat - f xstar ≤ (∑ i in Finset.range k, ippm.delta (i + 1)) / Λ + ‖x₀ - xstar‖^2 / (2 * Λ) := by
+  sorry
