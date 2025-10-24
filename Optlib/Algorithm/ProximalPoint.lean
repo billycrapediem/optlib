@@ -31,41 +31,33 @@ lemma proximal_three_point_identity (ppm : ProximalPoint f f' t x₀) (k : ℕ) 
     f x + 1 / (2 * t) * ‖x - ppm.x k‖ ^ 2 ≥
     f (ppm.x (k + 1)) + 1 / (2 * t) * ‖ppm.x (k + 1) - ppm.x k‖ ^ 2 +
     1 / (2 * t) * ‖x - ppm.x (k + 1)‖ ^ 2 := by
-  have prox_cond := ppm.update k
+  -- Get subgradient condition from proximal property
   have subgrad : (1 / t) • (ppm.x k - ppm.x (k + 1)) ∈ SubderivAt f (ppm.x (k + 1)) := by
-    rw [← prox_iff_subderiv_smul f ppm.fc ppm.t_pos (ppm.x (k + 1))]
-    exact prox_cond
-  rw [← mem_SubderivAt] at subgrad
-  have subgrad_ineq := subgrad x
-  simp [HasSubgradientAt] at subgrad_ineq
-  have inv_eq_div : t⁻¹ = 1 / t := by field_simp
-  conv_lhs at subgrad_ineq => arg 2; rw [inv_eq_div]
-  have inner_expand : inner ((1 / t) • (ppm.x k - ppm.x (k + 1))) (x - ppm.x (k + 1)) =
-      (1 / t) * inner (ppm.x k - ppm.x (k + 1)) (x - ppm.x (k + 1)) := by
-    rw [real_inner_smul_left]
-  rw [inner_expand] at subgrad_ineq
-  have norm_identity : 2 * inner (ppm.x k - ppm.x (k + 1)) (x - ppm.x (k + 1)) =
+    rw [← prox_iff_subderiv_smul f ppm.fc ppm.t_pos]; exact ppm.update k
+  -- Apply subgradient inequality
+  have := (mem_SubderivAt.mp subgrad) x
+  simp [HasSubgradientAt] at this
+  -- Use norm identity: 2⟨a,b⟩ = ‖a‖² + ‖b‖² - ‖a-b‖²
+  have norm_id : 2 * inner (ppm.x k - ppm.x (k + 1)) (x - ppm.x (k + 1)) =
       ‖ppm.x k - ppm.x (k + 1)‖ ^ 2 + ‖x - ppm.x (k + 1)‖ ^ 2 - ‖ppm.x k - x‖ ^ 2 := by
-    have h : ppm.x k - x = (ppm.x k - ppm.x (k + 1)) - (x - ppm.x (k + 1)) := by abel
-    have expand : ‖(ppm.x k - ppm.x (k + 1)) - (x - ppm.x (k + 1))‖ ^ 2 =
-        ‖ppm.x k - ppm.x (k + 1)‖ ^ 2 - 2 * inner (ppm.x k - ppm.x (k + 1)) (x - ppm.x (k + 1)) + ‖x - ppm.x (k + 1)‖ ^ 2 := by
-      apply norm_sub_sq_real
-    rw [← h] at expand
-    linarith
-  have norm_identity' : inner (ppm.x k - ppm.x (k + 1)) (x - ppm.x (k + 1)) =
-      (‖ppm.x k - ppm.x (k + 1)‖ ^ 2 + ‖x - ppm.x (k + 1)‖ ^ 2 - ‖ppm.x k - x‖ ^ 2) / 2 := by
-    have h := norm_identity
-    linarith
-  rw [norm_identity'] at subgrad_ineq
+    rw [show ppm.x k - x = (ppm.x k - ppm.x (k + 1)) - (x - ppm.x (k + 1)) from by abel]
+    simp only [norm_sub_sq_real]; ring
+  -- Main calculation
   calc f x + 1 / (2 * t) * ‖x - ppm.x k‖ ^ 2
       = f x + 1 / (2 * t) * ‖ppm.x k - x‖ ^ 2 := by rw [norm_sub_rev]
     _ ≥ f (ppm.x (k + 1)) + (1 / t) * ((‖ppm.x k - ppm.x (k + 1)‖ ^ 2 +
         ‖x - ppm.x (k + 1)‖ ^ 2 - ‖ppm.x k - x‖ ^ 2) / 2) +
-        1 / (2 * t) * ‖ppm.x k - x‖ ^ 2 := by linarith [subgrad_ineq]
-    _ = f (ppm.x (k + 1)) + 1 / (2 * t) * ‖ppm.x k - ppm.x (k + 1)‖ ^ 2 +
-        1 / (2 * t) * ‖x - ppm.x (k + 1)‖ ^ 2 := by ring
+        1 / (2 * t) * ‖ppm.x k - x‖ ^ 2 := by
+      have h := this; rw [real_inner_smul_left] at h
+      have h' : f (ppm.x (k + 1)) + (1 / t) * inner (ppm.x k - ppm.x (k + 1)) (x - ppm.x (k + 1)) ≤ f x := by
+        convert h using 2; field_simp
+      have : (1 / t) * inner (ppm.x k - ppm.x (k + 1)) (x - ppm.x (k + 1)) =
+             (1 / t) * ((‖ppm.x k - ppm.x (k + 1)‖ ^ 2 + ‖x - ppm.x (k + 1)‖ ^ 2 - ‖ppm.x k - x‖ ^ 2) / 2) := by
+        rw [← norm_id]; ring
+      linarith [h', this]
     _ = f (ppm.x (k + 1)) + 1 / (2 * t) * ‖ppm.x (k + 1) - ppm.x k‖ ^ 2 +
-        1 / (2 * t) * ‖x - ppm.x (k + 1)‖ ^ 2 := by rw [norm_sub_rev]
+        1 / (2 * t) * ‖x - ppm.x (k + 1)‖ ^ 2 := by
+      rw [norm_sub_rev (ppm.x k)]; ring
 
 lemma proximal_descent (ppm : ProximalPoint f f' t x₀) (k : ℕ) :
     f (ppm.x k) ≥ f (ppm.x (k + 1)) + 1 / t * ‖ppm.x (k + 1) - ppm.x k‖ ^ 2 := by
@@ -159,50 +151,28 @@ lemma proximal_sum_inequality (ppm : ProximalPoint f f' t x₀) (k : ℕ+)
           intro i hi
           exact term_bound i (Finset.mem_range.mp hi)
 
-lemma proximal_telescoping_sum (ppm : ProximalPoint f f' t x₀) (k : ℕ+)
-    (x_star : E) :
+lemma proximal_telescoping_sum (ppm : ProximalPoint f f' t x₀) (k : ℕ+) (x_star : E) :
     ∑ i in Finset.range k, (f (ppm.x (i + 1)) - f x_star) ≤
     1 / (2 * t) * ‖x₀ - x_star‖ ^ 2 - 1 / (2 * t) * ‖ppm.x k - x_star‖ ^ 2 := by
-  have key_ineq_general : ∀ i : ℕ, i < k →
-    f (ppm.x (i + 1)) - f x_star ≤
-    1 / (2 * t) * ‖ppm.x i - x_star‖ ^ 2 - 1 / (2 * t) * ‖ppm.x (i + 1) - x_star‖ ^ 2 := by
-    intro i hi
-    exact proximal_key_inequality ppm i x_star
-  have sum_ineq : ∑ i in Finset.range k, (f (ppm.x (i + 1)) - f x_star) ≤
-    ∑ i in Finset.range k, (1 / (2 * t) * ‖ppm.x i - x_star‖ ^ 2 -
-                           1 / (2 * t) * ‖ppm.x (i + 1) - x_star‖ ^ 2) := by
-    apply Finset.sum_le_sum
-    intro i hi
-    exact key_ineq_general i (Finset.mem_range.mp hi)
-  have telescope : ∑ i in Finset.range k,
-    (1 / (2 * t) * ‖ppm.x i - x_star‖ ^ 2 - 1 / (2 * t) * ‖ppm.x (i + 1) - x_star‖ ^ 2) =
-    1 / (2 * t) * ‖ppm.x 0 - x_star‖ ^ 2 - 1 / (2 * t) * ‖ppm.x k - x_star‖ ^ 2 := by
-    have h : ∀ n : ℕ, n > 0 →
-      ∑ i in Finset.range n,
-        (1 / (2 * t) * ‖ppm.x i - x_star‖ ^ 2 - 1 / (2 * t) * ‖ppm.x (i + 1) - x_star‖ ^ 2) =
-        1 / (2 * t) * ‖ppm.x 0 - x_star‖ ^ 2 - 1 / (2 * t) * ‖ppm.x n - x_star‖ ^ 2 := by
-      intro n
-      induction n with
-      | zero => intro; contradiction
-      | succ n ih =>
-        intro _
-        rw [Finset.sum_range_succ]
-        by_cases hn : n = 0
-        · subst hn
-          simp
-        · have hn_pos : n > 0 := Nat.pos_of_ne_zero hn
-          rw [ih hn_pos]
-          ring
-    apply h
-    exact k.pos
-
-  have x0_eq : ppm.x 0 = x₀ := ppm.x_init
-  calc ∑ i in Finset.range k, (f (ppm.x (i + 1)) - f x_star)
-      ≤ ∑ i in Finset.range k, (1 / (2 * t) * ‖ppm.x i - x_star‖ ^ 2 -
-                                1 / (2 * t) * ‖ppm.x (i + 1) - x_star‖ ^ 2) := sum_ineq
-    _ = 1 / (2 * t) * ‖ppm.x 0 - x_star‖ ^ 2 - 1 / (2 * t) * ‖ppm.x k - x_star‖ ^ 2 := telescope
+  -- Each term satisfies the key inequality
+  have ineq : ∀ i : ℕ, i < k → f (ppm.x (i + 1)) - f x_star ≤
+      1 / (2 * t) * ‖ppm.x i - x_star‖ ^ 2 - 1 / (2 * t) * ‖ppm.x (i + 1) - x_star‖ ^ 2 :=
+    fun i _ => proximal_key_inequality ppm i x_star
+  -- Sum the inequalities
+  calc ∑ i in range k, (f (ppm.x (i + 1)) - f x_star)
+      ≤ ∑ i in range k, (1 / (2 * t) * ‖ppm.x i - x_star‖ ^ 2 -
+                         1 / (2 * t) * ‖ppm.x (i + 1) - x_star‖ ^ 2) := by
+        apply sum_le_sum; intro i hi; exact ineq i (mem_range.mp hi)
+    _ = 1 / (2 * t) * ‖ppm.x 0 - x_star‖ ^ 2 - 1 / (2 * t) * ‖ppm.x k - x_star‖ ^ 2 := by
+        -- Telescoping: Standard induction on the sum
+        clear ineq
+        induction k using PNat.recOn with
+        | p1 => simp
+        | hp n ih =>
+          simp only [PNat.add_coe, PNat.one_coe]
+          rw [sum_range_succ, ih]; ring
     _ = 1 / (2 * t) * ‖x₀ - x_star‖ ^ 2 - 1 / (2 * t) * ‖ppm.x k - x_star‖ ^ 2 := by
-        rw [x0_eq]
+        rw [ppm.x_init]
 
 lemma proximal_combined_bound (ppm : ProximalPoint f f' t x₀) (k : ℕ+)
     (x_star : E) :
@@ -221,13 +191,6 @@ lemma proximal_combined_bound (ppm : ProximalPoint f f' t x₀) (k : ℕ+)
     linarith
   exact le_trans intermediate drop_negative
 
-/--
-  Theorem: Convergence rate of the proximal point method with constant step size.
-
-  For all k ≥ 1, the suboptimality gap at iterate k is bounded by
-    f(x_k) - f(x_*) ≤ (1 / (2 k t)) * ‖x₀ - x_*‖²
-  where x_* is a minimizer of f.
--/
 theorem proximal_method_convergence_rate : ∀ (k : ℕ+),
     f (ppm.x k) - f (x_star f f_min_exists) ≤
     1 / (2 * (k : ℝ) * t) * ‖x₀ - x_star f f_min_exists‖ ^ 2 := by
