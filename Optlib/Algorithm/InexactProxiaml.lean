@@ -1,6 +1,7 @@
 import Optlib.Function.Lsmooth
 import Optlib.Function.Proximal
 import Optlib.Convex.StronglyConvex
+import Optlib.Algorithm.ProximalGradient
 
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [CompleteSpace E]
 variable {x₀ xm : E} {f : E → ℝ} {f' : E → E} {σ : ℝ}
@@ -24,7 +25,6 @@ class InexactProximalPoint (f : E → ℝ) (f' : E → E) (σ : ℝ) (x₀ : E) 
   delta : ℕ → ℝ
   eps : ℕ → ℝ
   m : ℝ
-  diff : ∀ x₁ : E, HasGradientAt f (f' x₁) x₁
   fsc : StrongConvexOn univ m f
   fc : ConvexOn ℝ univ f
   m_pos : 0 < m
