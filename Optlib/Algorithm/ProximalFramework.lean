@@ -73,13 +73,35 @@ lemma pg_optimality_condition (f h : E → ℝ) (f' : E → E)
         (1 / pgm.t) * inner (pgm.x (k-1) - pgm.x k) (x - pgm.x k) := by
           simp only [inner_sub_right]; ring_nf
 
--- Helper lemma: Definition of ε for smooth part
 lemma pg_epsilon_bound (f h : E → ℝ) (f' : E → E)
     (pgm : proximal_gradient_method f h f' x₀)
-    (k : ℕ) (hk : k > 0) :
+    (k : ℕ) :
     f (pgm.x k) - (f (pgm.x (k-1)) + inner (f' (pgm.x (k-1))) (pgm.x k - pgm.x (k-1))) ≤
       pgm.L / 2 * ‖pgm.x k - pgm.x (k-1)‖^2 := by
-  sorry
+  -- Apply the L-smooth upper bound theorem
+  have upper_bound := lipschitz_continuos_upper_bound' pgm.h₁ pgm.h₂
+    (pgm.x (k-1)) (pgm.x k)
+
+  linarith
+
+
+lemma linearization_error_bound
+  (f : E → ℝ) (f' : E → E) (x y : E) (L : NNReal)
+  (hdiff : ∀ x₁ : E, HasGradientAt f (f' x₁) x₁)
+  (hlip : LipschitzWith L f'):
+  f y - (f x + inner (f' x) (y - x)) ≤ (L : ℝ) / 2 * ‖y - x‖^2 := by
+  have upper_bound := lipschitz_continuos_upper_bound' hdiff hlip x y
+  linarith
+
+-- Helper lemma: Stepsize condition implies the desired bound
+lemma stepsize_implies_bound
+  (t : ℝ) (L : NNReal) (σ : ℝ)
+  (hstep : t ≤ σ / L)
+  (hL_pos : 0 < L) :
+  t * L ≤ σ := by
+  calc t * L
+      ≤ (σ / L) * L := mul_le_mul_of_nonneg_right hstep (le_of_lt hL_pos)
+    _ = σ := by field_simp [ne_of_gt hL_pos]
 
 
 def proximal_gradient_is_IPP
@@ -111,7 +133,7 @@ def proximal_gradient_is_IPP
     simp [hk]
     exact pgm.tpos
   delta_nonneg := by
-    intro k hk
+    intro k
     simp
   subgrad_cond := by
     intro k hk
@@ -149,4 +171,21 @@ def proximal_gradient_is_IPP
           rw [one_div]
   prox_cond := by
     intro k hk
-    sorry
+    have hk_ne : k ≠ 0 := Nat.pos_iff_ne_zero.mp hk
+    simp [hk_ne]
+    -- Apply the linearization error bound
+    have eps_bound := linearization_error_bound f f' (pgm.x (k-1)) (pgm.x k) pgm.L hdiff pgm.h₂
+
+    -- Apply the stepsize condition
+    have step_bound := stepsize_implies_bound pgm.t pgm.L σ hstep pgm.hL
+
+    -- Chain the inequalities
+    calc 2 * pgm.t *
+         (f (pgm.x k) -
+         (f (pgm.x (k-1)) + inner (f' (pgm.x (k-1))) (pgm.x k - pgm.x (k-1))))
+      _ ≤ 2 * pgm.t * ((pgm.L : ℝ) / 2 * ‖pgm.x k - pgm.x (k-1)‖^2) := by
+            apply mul_le_mul_of_nonneg_left eps_bound
+            linarith [pgm.tpos]
+      _ = pgm.t * (pgm.L : ℝ) * ‖pgm.x k - pgm.x (k-1)‖^2 := by ring
+      _ ≤ σ * ‖pgm.x k - pgm.x (k-1)‖^2 := by
+            gcongr
