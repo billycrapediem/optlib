@@ -189,3 +189,31 @@ def proximal_gradient_is_IPP
       _ = pgm.t * (pgm.L : ℝ) * ‖pgm.x k - pgm.x (k-1)‖^2 := by ring
       _ ≤ σ * ‖pgm.x k - pgm.x (k-1)‖^2 := by
             gcongr
+
+
+theorem proximal_gradient_convergence_rate
+  (f h : E → ℝ) (f' : E → E) (x₀ : E) (σ : ℝ)
+  (pgm : proximal_gradient_method f h f' x₀)
+  (hσ : 0 < σ ∧ σ ≤ 1)
+  (hstep : pgm.t ≤ σ / pgm.L)
+  (m : ℝ) (m_pos : 0 < m)
+  (hsc : StrongConvexOn univ m (f + h))
+  (hf_conv : ConvexOn ℝ univ f)
+  (hh_conv : ConvexOn ℝ univ h)
+  (hdiff : ∀ x₁ : E, HasGradientAt f (f' x₁) x₁)
+  (f_min_exists : ∃ x_star : E, IsMinOn (f + h) univ x_star)
+  (k : ℕ+) :
+  let ϕ := f + h
+  let ippm := proximal_gradient_is_IPP f h f' x₀ σ pgm hσ hstep m m_pos hsc
+              hf_conv hh_conv hdiff
+  let Λ := ∑ i in Finset.range k, ippm.lam (i + 1)
+  let x_hat := Λ⁻¹ • (∑ i in Finset.range k, ippm.lam (i + 1) • ippm.x_tilde (i + 1))
+  let xstar := x_star ϕ f_min_exists
+  ϕ x_hat - ϕ xstar ≤ (∑ i in Finset.range k, ippm.delta (i + 1)) / Λ + ‖x₀ - xstar‖^2 / (2 * Λ) := by
+
+  -- Create the IPP instance from proximal gradient
+  let ippm := proximal_gradient_is_IPP f h f' x₀ σ pgm hσ hstep m m_pos hsc
+              hf_conv hh_conv hdiff
+
+  -- Apply the general IPP convergence theorem directly
+  exact inexact_proximal_convergence_rate ippm f_min_exists k
