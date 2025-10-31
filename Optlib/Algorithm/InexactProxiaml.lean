@@ -49,6 +49,7 @@ noncomputable def Gamma (ippm : InexactProximalPoint f f' σ x₀) (k : ℕ) (x 
 noncomputable def objective (ippm : InexactProximalPoint f f' σ x₀) (k : ℕ) (x : E) : ℝ :=
   ippm.lam k * Gamma ippm k x + 1/2 * ‖x - ippm.x (k - 1)‖^2
 -- Now Lemma 1(a) is provable
+omit [CompleteSpace E] in
 lemma inexact_proximal_lower_bound (ippm : InexactProximalPoint f f' σ x₀) (k : ℕ) (hk : k > 0) :
     ∀ x : E, Gamma ippm k x ≤ f x := by
   intro x
@@ -58,7 +59,7 @@ lemma inexact_proximal_lower_bound (ippm : InexactProximalPoint f f' σ x₀) (k
   simp at h
   specialize h x
   linarith
-
+omit [CompleteSpace E] in
 lemma eps_subgrad_at_xk (ippm : InexactProximalPoint f f' σ x₀) (k : ℕ) (hk : k > 0) :
     f (ippm.x k) ≥ f (ippm.x_tilde k) +
     inner (v ippm k) (ippm.x k - ippm.x_tilde k) - ippm.eps k := by
@@ -66,6 +67,7 @@ lemma eps_subgrad_at_xk (ippm : InexactProximalPoint f f' σ x₀) (k : ℕ) (hk
   simp [EpsSubderivAt] at h
   simpa [v] using h (ippm.x k)
 
+omit [CompleteSpace E] in
 -- Helper Lemma 2: Rearrange to get the gap
 lemma gap_from_subgrad (ippm : InexactProximalPoint f f' σ x₀) (k : ℕ) (hk : k > 0) :
     f (ippm.x_tilde k) - f (ippm.x k) ≤
@@ -73,6 +75,7 @@ lemma gap_from_subgrad (ippm : InexactProximalPoint f f' σ x₀) (k : ℕ) (hk 
   have h := eps_subgrad_at_xk ippm k hk
   linarith
 
+omit [CompleteSpace E] in
 -- Helper Lemma 3: Simplify the inner product term
 lemma inner_product_expansion (ippm : InexactProximalPoint f f' σ x₀) (k : ℕ) :
     -inner (v ippm k) (ippm.x k - ippm.x_tilde k) =
@@ -84,7 +87,7 @@ lemma inner_product_expansion (ippm : InexactProximalPoint f f' σ x₀) (k : �
   rw [h, inner_neg_right]
   simp [mul_neg, neg_neg]
 
-
+omit [CompleteSpace E] in
 -- Helper Lemma 4: Key norm identity
 lemma norm_identity_for_three_points (a b c : E) :
     2 * inner (a - b) (c - b) = ‖a - b‖^2 + ‖c - b‖^2 - ‖a - c‖^2 := by
@@ -95,6 +98,7 @@ lemma norm_identity_for_three_points (a b c : E) :
   rw [← h] at expand
   linarith
 
+omit [CompleteSpace E] in
 -- Helper Lemma 5: Express as sum of norms
 lemma inner_as_norm_difference (ippm : InexactProximalPoint f f' σ x₀) (k : ℕ) (_hk : k > 0) :
     (1 / ippm.lam k) * inner (ippm.x (k-1) - ippm.x k) (ippm.x_tilde k - ippm.x k) =
@@ -107,6 +111,7 @@ lemma inner_as_norm_difference (ippm : InexactProximalPoint f f' σ x₀) (k : �
   -- Turn divisions into multiplications by inverses
   simpa [div_eq_mul_inv, mul_comm, mul_left_comm, mul_assoc] using h'
 
+omit [CompleteSpace E] in
 -- Helper Lemma 6: Combine with added terms
 lemma combine_norm_terms (ippm : InexactProximalPoint f f' σ x₀) (k : ℕ) (hk : k > 0) :
     (1 / ippm.lam k) * inner (ippm.x (k-1) - ippm.x k) (ippm.x_tilde k - ippm.x k) +
@@ -122,6 +127,7 @@ lemma combine_norm_terms (ippm : InexactProximalPoint f f' σ x₀) (k : ℕ) (h
   field_simp
   ring
 
+omit [CompleteSpace E] in
 -- Helper Lemma 7: Apply the proximal condition to get final bound
 lemma apply_prox_condition (ippm : InexactProximalPoint f f' σ x₀) (k : ℕ) (hk : k > 0) :
     (1 / (2 * ippm.lam k)) * ‖ippm.x_tilde k - ippm.x k‖^2 + ippm.eps k ≤
@@ -140,6 +146,7 @@ lemma apply_prox_condition (ippm : InexactProximalPoint f f' σ x₀) (k : ℕ) 
       _ = (σ / (2 * ippm.lam k)) * ‖ippm.x_tilde k - ippm.x (k-1)‖^2 + ippm.delta k / ippm.lam k := by
           field_simp; ring
 
+omit [CompleteSpace E] in
 -- Main Lemma 1(b): Putting it all together
 lemma inexact_proximal_optimality_gap_bound (ippm : InexactProximalPoint f f' σ x₀) (k : ℕ)
     (hk : k > 0) :
@@ -167,42 +174,85 @@ lemma inexact_proximal_optimality_gap_bound (ippm : InexactProximalPoint f f' σ
       _ ≤ (σ / (2 * ippm.lam k)) * ‖ippm.x_tilde k - ippm.x (k - 1)‖^2 + ippm.delta k / ippm.lam k :=
           apply_prox_condition ippm k hk
 
-lemma gradient_linear_part (ippm : InexactProximalPoint f f' σ x₀) (k : ℕ) (x : E) :
-    HasGradientAt (fun y ↦ ippm.lam k * inner (v ippm k) (y - ippm.x_tilde k))
-      (ippm.lam k • v ippm k) x := by
-  sorry
-
-lemma gradient_quadratic_part (ippm : InexactProximalPoint f f' σ x₀) (k : ℕ) (x : E) :
-    HasGradientAt (fun y ↦ 1/2 * ‖y - ippm.x (k - 1)‖^2)
-      (x - ippm.x (k - 1)) x := by
-  sorry
-
-lemma gradient_objective (ippm : InexactProximalPoint f f' σ x₀) (k : ℕ) (x : E) :
-    HasGradientAt (objective ippm k)
-      (ippm.lam k • v ippm k + (x - ippm.x (k - 1))) x := by
-  sorry
-
+omit [CompleteSpace E] in
 lemma gradient_zero_at_iterate (ippm : InexactProximalPoint f f' σ x₀) (k : ℕ)
     (hk : k > 0) :
     ippm.lam k • v ippm k + (ippm.x k - ippm.x (k - 1)) = 0 := by
-  sorry
-
-lemma objective_strongly_convex (ippm : InexactProximalPoint f f' σ x₀) (k : ℕ)
-    (hk : k > 0) :
-    StrongConvexOn univ 1 (objective ippm k) := by
-  sorry
-
-lemma objective_convex (ippm : InexactProximalPoint f f' σ x₀) (k : ℕ)
-    (hk : k > 0) :
-    ConvexOn ℝ univ (objective ippm k) := by
-  sorry
-
+  unfold v
+  have lam_ne_zero : ippm.lam k ≠ 0 := ne_of_gt (ippm.lam_pos k hk)
+  rw [smul_smul, mul_inv_cancel₀ lam_ne_zero, one_smul]
+  abel
+omit [CompleteSpace E] in
 lemma inexact_proximal_minimizer (ippm : InexactProximalPoint f f' σ x₀) (k : ℕ)
     (hk : k > 0) :
     IsMinOn (objective ippm k) univ (ippm.x k) := by
-  sorry
+  rw [isMinOn_univ_iff]
+  intro y
+  unfold objective Gamma
 
+  -- Use the gradient zero condition
+  have grad_zero := gradient_zero_at_iterate ippm k hk
+  unfold v at grad_zero
 
+  -- Key: rewrite using three-point identity
+  suffices h : ippm.lam k * inner (v ippm k) (y - ippm.x_tilde k) + 1/2 * ‖y - ippm.x (k - 1)‖^2 ≥
+               ippm.lam k * inner (v ippm k) (ippm.x k - ippm.x_tilde k) + 1/2 * ‖ippm.x k - ippm.x (k - 1)‖^2 by
+    linarith
+
+  -- Expand the inner products
+  have inner_diff : ippm.lam k * inner (v ippm k) (y - ippm.x_tilde k) -
+                    ippm.lam k * inner (v ippm k) (ippm.x k - ippm.x_tilde k) =
+                    ippm.lam k * inner (v ippm k) (y - ippm.x k) := by
+    rw [← mul_sub, ← inner_sub_right]
+    congr 2
+    abel
+
+  -- Three-point norm identity
+  have norm_expand : ‖y - ippm.x (k - 1)‖^2 - ‖ippm.x k - ippm.x (k - 1)‖^2 =
+                     ‖y - ippm.x k‖^2 + 2 * inner (y - ippm.x k) (ippm.x k - ippm.x (k - 1)) := by
+    have h : y - ippm.x (k - 1) = (y - ippm.x k) + (ippm.x k - ippm.x (k - 1)) := by abel
+    have expand : ‖(y - ippm.x k) + (ippm.x k - ippm.x (k - 1))‖^2 =
+        ‖y - ippm.x k‖^2 + 2 * inner (y - ippm.x k) (ippm.x k - ippm.x (k - 1)) +
+        ‖ippm.x k - ippm.x (k - 1)‖^2 := by
+      apply norm_add_sq_real
+    rw [← h] at expand
+    linarith
+
+  -- Combine using grad_zero
+  have key : ippm.lam k * inner (v ippm k) (y - ippm.x k) +
+             inner (y - ippm.x k) (ippm.x k - ippm.x (k - 1)) = 0 := by
+    calc ippm.lam k * inner (v ippm k) (y - ippm.x k) + inner (y - ippm.x k) (ippm.x k - ippm.x (k - 1))
+        = inner (ippm.lam k • v ippm k) (y - ippm.x k) + inner (y - ippm.x k) (ippm.x k - ippm.x (k - 1)) := by
+          simp [inner_smul_left]
+      _ = inner (ippm.lam k • v ippm k) (y - ippm.x k) + inner (ippm.x k - ippm.x (k - 1)) (y - ippm.x k) := by
+          simp [real_inner_comm]
+      _ = inner (ippm.lam k • v ippm k + (ippm.x k - ippm.x (k - 1))) (y - ippm.x k) := by
+          rw [← inner_add_left]
+      _ = inner 0 (y - ippm.x k) := by
+          unfold v; rw [grad_zero]
+      _ = 0 := by rw [inner_zero_left]
+
+  -- Now prove the suffices goal
+  calc ippm.lam k * inner (v ippm k) (y - ippm.x_tilde k) + 1/2 * ‖y - ippm.x (k - 1)‖^2
+      = ippm.lam k * inner (v ippm k) (ippm.x k - ippm.x_tilde k) +
+        ippm.lam k * inner (v ippm k) (y - ippm.x k) +
+        1/2 * ‖ippm.x k - ippm.x (k - 1)‖^2 +
+        1/2 * (‖y - ippm.x k‖^2 + 2 * inner (y - ippm.x k) (ippm.x k - ippm.x (k - 1))) := by
+          rw [← inner_diff, ← norm_expand]; ring
+    _ = ippm.lam k * inner (v ippm k) (ippm.x k - ippm.x_tilde k) +
+        1/2 * ‖ippm.x k - ippm.x (k - 1)‖^2 +
+        1/2 * ‖y - ippm.x k‖^2 +
+        (ippm.lam k * inner (v ippm k) (y - ippm.x k) + inner (y - ippm.x k) (ippm.x k - ippm.x (k - 1))) := by
+          ring
+    _ = ippm.lam k * inner (v ippm k) (ippm.x k - ippm.x_tilde k) +
+        1/2 * ‖ippm.x k - ippm.x (k - 1)‖^2 +
+        1/2 * ‖y - ippm.x k‖^2 := by
+          rw [key]; ring
+    _ ≥ ippm.lam k * inner (v ippm k) (ippm.x k - ippm.x_tilde k) +
+        1/2 * ‖ippm.x k - ippm.x (k - 1)‖^2 := by
+          linarith [sq_nonneg ‖y - ippm.x k‖]
+
+omit [CompleteSpace E] in
 -- Lemma: The infimum of the objective equals its value at xk
 lemma objective_infimum_at_iterate (ippm : InexactProximalPoint f f' σ x₀) (k : ℕ)
     (hk : k > 0) :
@@ -231,6 +281,7 @@ lemma objective_infimum_at_iterate (ippm : InexactProximalPoint f f' σ x₀) (k
       intros y hy
       obtain ⟨x, _, rfl⟩ := hy
       exact min_at_xk x
+
 
 -- Lemma: Identity relating objective at xk to objective at any point x
 lemma objective_identity_with_norm (ippm : InexactProximalPoint f f' σ x₀) (k : ℕ)
@@ -278,12 +329,14 @@ lemma objective_identity_with_norm (ippm : InexactProximalPoint f f' σ x₀) (k
           rw [grad_zero, inner_zero_right]
           ring
 
+omit [CompleteSpace E] in
 -- Lemma: Gamma evaluated at x_tilde k simplifies
 lemma gamma_at_x_tilde (ippm : InexactProximalPoint f f' σ x₀) (k : ℕ) :
     Gamma ippm k (ippm.x_tilde k) = f (ippm.x_tilde k) - ippm.eps k := by
   unfold Gamma v
   simp [inner_zero_right, sub_self]
 
+omit [CompleteSpace E] in
 -- Lemma: Algebraic rearrangement for the objective terms
 lemma objective_rearrangement (ippm : InexactProximalPoint f f' σ x₀) (k : ℕ) :
     ippm.lam k * (f (ippm.x_tilde k) - ippm.eps k) +
@@ -295,6 +348,7 @@ lemma objective_rearrangement (ippm : InexactProximalPoint f f' σ x₀) (k : �
            2 * ippm.lam k * ippm.eps k) := by
   ring
 
+omit [CompleteSpace E] in
 -- Lemma: Lower bound from proximal condition
 lemma lower_bound_from_prox_condition (ippm : InexactProximalPoint f f' σ x₀) (k : ℕ)
     (hk : k > 0) :
@@ -312,6 +366,7 @@ lemma lower_bound_from_prox_condition (ippm : InexactProximalPoint f f' σ x₀)
     _ ≥ ‖ippm.x_tilde k - ippm.x (k - 1)‖^2 - (σ * ‖ippm.x_tilde k - ippm.x (k - 1)‖^2 + 2 * ippm.delta k) := by linarith [prox]
     _ = (1 - σ) * ‖ippm.x_tilde k - ippm.x (k - 1)‖^2 - 2 * ippm.delta k := by ring
 
+omit [CompleteSpace E] in
 lemma strengthen_lower_bound (ippm : InexactProximalPoint f f' σ x₀) (k : ℕ)
     (hk : k > 0) :
     ippm.lam k * f (ippm.x_tilde k) +
