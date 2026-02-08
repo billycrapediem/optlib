@@ -292,8 +292,8 @@ lemma posTangentCone_localmin_inner_pos {f : E → ℝ} {loc : E} (hl : IsLocalM
           rw [Metric.mem_ball, dist_eq_norm] at ha;
           have t1 : ‖c n • d n - v‖ ≥ ‖c n • d n‖ - ‖v‖ := norm_sub_norm_le _ v
           linarith
-        rw [norm_smul, Real.norm_eq_abs, abs_of_pos cpos] at this;
-        field_simp; exact (le_div_iff₀' cpos).mpr this
+        rw [norm_smul, Real.norm_eq_abs, abs_of_pos cpos, mul_comm] at this
+        rwa [le_mul_inv_iff₀ cpos, mul_comm]
       rw [← hzd n]; exact this; apply cpos
     have t2 : (fun n ↦ f (z n) - f loc - ⟪z n - loc, gradient f loc⟫_ℝ)
         =o[atTop] (fun n ↦ 1 / c n) := Asymptotics.IsLittleO.trans_isBigO hz t1

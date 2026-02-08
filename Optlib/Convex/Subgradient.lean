@@ -301,7 +301,7 @@ theorem SubderivWithinAt_eq_gradient {f'x : E} (hx : x ∈ interior s)
     intro t _ ht; rw [dist_eq_norm] at ht; rw [dist_eq_norm]
     have : dist (x + t • v) x < δ := by
       rw [dist_eq_norm, add_sub_cancel_left, norm_smul, ← (sub_zero t)]
-      apply lt_of_lt_of_eq ((mul_lt_mul_right (norm_sub_pos_iff.mpr neq)).mpr ht)
+      apply lt_of_lt_of_eq ((mul_lt_mul_iff_left₀ (norm_sub_pos_iff.mpr neq)).mpr ht)
       rw [mul_assoc, inv_mul_cancel₀ (norm_ne_zero_iff.mpr vneq), mul_one]
     specialize hδ this; rw [dist_eq_norm] at hδ
     have eq1 : ‖‖x + t • v - x‖⁻¹‖ = ‖t • v‖⁻¹ := by
@@ -591,13 +591,9 @@ theorem SubderivAt.add {f₁ f₂ : E → ℝ} (h₁ : ConvexOn ℝ univ f₁) (
     push_neg at hb
     have pos : (c / (2 * b)) > 0 := by
       apply div_pos_of_neg_of_neg hc (by linarith)
-    specialize (htp (c / (2 * b)) pos); field_simp [hb] at htp
-    have eq : b * c / (2 * b) = c / 2 := by
-      have hb0 : b ≠ 0 := ne_of_lt hb
-      simpa [mul_comm] using (mul_div_mul_right (c) (2 : ℝ) hb0)
-    have eq' : b * c / (b * 2) = c / 2 := by
-      simpa [mul_comm] using eq
-    rw [eq'] at htp; linarith
+    specialize (htp (c / (2 * b)) pos)
+    have hb0 : b ≠ 0 := ne_of_lt hb
+    field_simp [hb0] at htp; linarith
   have bleq0 : b < 0 := by
     rw [ceq0] at htp
     specialize htp 1 (by linarith); rw [mul_one] at htp; linarith

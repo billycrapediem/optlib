@@ -117,7 +117,7 @@ theorem Strong_convex_Lipschitz_smooth (hsc: StrongConvexOn univ m f) (mp : m > 
     have mlpos : 0 < m + l := by linarith
     have eq3 (u v : E) (h1 : m * ‖v‖ ^ 2 ≤ ⟪u, v⟫_ℝ) (h2 : 1 / l * ‖u‖ ^ 2 ≤ ⟪u, v⟫_ℝ):
       ⟪u, v⟫_ℝ ≥ m * l / (m + l) * ‖v‖ ^ 2 + 1 / (m + l) * ‖u‖ ^ 2 := by
-        field_simp; rw [ge_iff_le, div_le_iff₀ mlpos, mul_comm _ (m + l), add_mul]
+        rw [ge_iff_le]; field_simp; rw [add_mul]
         have eq4 : m * l * ‖v‖ ^ 2  ≤ m * ⟪u, v⟫_ℝ := by
           calc
             _ ≤ m * m * ‖v‖ ^ 2 := by
@@ -129,7 +129,7 @@ theorem Strong_convex_Lipschitz_smooth (hsc: StrongConvexOn univ m f) (mp : m > 
             _ ≤ m * ⟪u, v⟫_ℝ := by
               rw [mul_assoc, mul_le_mul_iff_right₀]; apply h1; apply mp
         have eq5 : ‖u‖ ^ 2 ≤ l * ⟪u, v⟫_ℝ := by
-          field_simp at h2; rw [mul_comm, ← div_le_iff₀]; apply h2; apply hl
+          field_simp at h2 ⊢; exact h2
         linarith
     show ⟪alpha, beta⟫_ℝ ≥ m * l / (m + l) * ‖beta‖ ^ 2 + 1 / (m + l) * ‖alpha‖ ^ 2
     apply eq3; apply eq2; apply eq1
@@ -139,12 +139,21 @@ lemma lipschitz_derivxm_eq_zero (h₁ : ∀ x : E, HasGradientAt f (f' x) x)
   have eq1 : ∀ x : E, 1 / (2 * l) * ‖f' x‖ ^ 2 ≤ f x - f xm := by
     apply lipschitz_minima_lower_bound h₁ h₂ min hl
   specialize eq1 xm
-  field_simp at eq1
-  have _ : (0 : ℝ) < 2 * l := by linarith
-  have eq3 : 0 ≤ ‖f' xm‖ ^ 2 / (2 * l) := by
-    apply div_nonneg; simp; linarith
-  have eq4 : ‖f' xm‖ ^ 2 / (2 * l) = 0 := by linarith
-  field_simp at eq4; simp_all
+  have eq2 : 1 / (2 * l) * ‖f' xm‖ ^ 2 ≤ 0 := by
+    calc 1 / (2 * l) * ‖f' xm‖ ^ 2
+      _ ≤ f xm - f xm := eq1
+      _ = 0 := by ring
+  have hl_pos : (0 : ℝ) < 2 * l := by linarith
+  have eq3 : ‖f' xm‖ ^ 2 = 0 := by
+    have norm_nonneg : 0 ≤ ‖f' xm‖ ^ 2 := by simp
+    have coef_pos : (0 : ℝ) < 1 / (2 * l) := by
+      rw [div_pos_iff]
+      left
+      constructor
+      · norm_num
+      · exact hl_pos
+    nlinarith [sq_nonneg (‖f' xm‖)]
+  simp_all
 
 variable (hsc: StrongConvexOn univ m f) {alg : Gradient_Descent_fix_stepsize f f' x₀}
 

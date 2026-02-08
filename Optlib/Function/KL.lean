@@ -167,7 +167,7 @@ lemma const_mul_special_concave : ∀ c > 0, (fun t => c⁻¹ * t) ∈ desingula
     rw [fun_smul_eq_mul]; apply (continuousAt_const_smul_iff₀ _).2
     apply continuousAt_id; field_simp; simp; grind
   have h₅: ∀ (x : ℝ), 0 < x → x < c / 2 → 0 < deriv (fun t ↦ c⁻¹ * t) x := by
-    intro x _ _; rw [deriv_of_const_mul_func]; field_simp; simp; grind
+    intro x _ _; rw [deriv_of_const_mul_func]; field_simp; simp;
   exact ⟨h₁, h₃, h₄, h₅⟩
 
 

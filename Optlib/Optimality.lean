@@ -1,3 +1,1 @@
-import Optlib.Optimality.Constrained_Problem
 import Optlib.Optimality.OptimalityConditionOfUnconstrainedProblem
-import Optlib.Optimality.Weak_Duality
