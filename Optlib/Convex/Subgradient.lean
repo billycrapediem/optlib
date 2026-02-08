@@ -189,11 +189,11 @@ theorem SubderivAt.convex : ∀ x, Convex ℝ (SubderivAt f x) := by
   have ineq1 : a • f y ≥ a • f x + a • ⟪g₁, y - x⟫ := by
     rw [← smul_add]
     apply smul_le_smul_of_nonneg_left (h1 y) lea
-  have ineq2 : b • f y ≥ b • f x + b • inner g₂ (y - x) := by
+  have ineq2 : b • f y ≥ b • f x + b • ⟪g₂, y - x⟫ := by
     rw [← smul_add]
     apply smul_le_smul_of_nonneg_left (h2 y) leb
-  have eq : (a • f x + a • inner g₁ (y - x)) + (b • f x + b • inner g₂ (y - x))
-      = f x + inner (a • g₁ + b • g₂) (y - x) := by
+  have eq : (a • f x + a • ⟪g₁, y - x⟫) + (b • f x + b • ⟪g₂, y - x⟫)
+      = f x + ⟪a • g₁ + b • g₂, y - x⟫ := by
     rw [add_add_add_comm, ← Eq.symm (Convex.combo_self abeq (f x))]
     apply congrArg (HAdd.hAdd (f x))
     rw [inner_add_left, inner_smul_left, inner_smul_left]; rfl
@@ -208,11 +208,11 @@ theorem SubderivWithinAt.convex : ∀ x ∈ s, Convex ℝ (SubderivWithinAt f s 
   have ineq1 : a • f y ≥ a • f x + a • ⟪g₁, y - x⟫ := by
     rw [← smul_add]
     apply smul_le_smul_of_nonneg_left (h1 y ys) lea
-  have ineq2 : b • f y ≥ b • f x + b • inner g₂ (y - x) := by
+  have ineq2 : b • f y ≥ b • f x + b • ⟪g₂, y - x⟫ := by
     rw [← smul_add]
     apply smul_le_smul_of_nonneg_left (h2 y ys) leb
-  have eq : (a • f x + a • inner g₁ (y - x)) + (b • f x + b • inner g₂ (y - x))
-      = f x + inner (a • g₁ + b • g₂) (y - x) := by
+  have eq : (a • f x + a • ⟪g₁, y - x⟫) + (b • f x + b • ⟪g₂, y - x⟫)
+      = f x + ⟪a • g₁ + b • g₂, y - x⟫ := by
     rw [add_add_add_comm, ← Eq.symm (Convex.combo_self abeq (f x))]
     apply congrArg (HAdd.hAdd (f x))
     rw [inner_add_left, inner_smul_left, inner_smul_left]; rfl
@@ -224,8 +224,8 @@ theorem subgradientAt_mono {u v : E} {f : E → ℝ}{y : E}
     (hu : u ∈ SubderivAt f x) (hv : v ∈ SubderivAt f y) : ⟪u - v, x - y⟫ ≥ (0 : ℝ):= by
   specialize hu y; specialize hv x
   have ineq1 : ⟪u, x - y⟫ ≥ f x - f y := by
-    rw [congrArg (inner u) (Eq.symm (neg_sub y x)), inner_neg_right]; linarith
-  have _ : inner v (x - y) ≤ f x - f y := Iff.mpr le_sub_iff_add_le' hv
+    rw [congrArg (⟪u, ·⟫) (Eq.symm (neg_sub y x)), inner_neg_right]; linarith
+  have _ : ⟪v, x - y⟫ ≤ f x - f y := Iff.mpr le_sub_iff_add_le' hv
   rw [inner_sub_left]; linarith
 
 end congr
@@ -259,7 +259,7 @@ theorem SubderivAt.nonempty (hf : ConvexOn ℝ univ f) (hc : ContinuousOn f univ
   have : x ∈ interior univ := by simp
   rw [← interior_univ] at hc
   obtain h := SubderivWithinAt.Nonempty hf hc x this
-  simp [h]
+  simp only [nonempty_subtype]
   rcases h with ⟨a, ha⟩
   exact ⟨a, ha⟩
 
@@ -286,7 +286,7 @@ theorem SubderivWithinAt_eq_gradient {f'x : E} (hx : x ∈ interior s)
   · use g; intro y ys
     apply Convex_first_order_condition' h hf (interior_subset hx) y ys
   intro g' hg'; by_contra neq
-  apply not_le_of_lt (norm_sub_pos_iff.mpr neq)
+  apply not_le_of_gt (norm_sub_pos_iff.mpr neq)
   let v := g' - g; obtain vneq := sub_ne_zero.mpr neq
   have : Tendsto (fun (t : ℝ) => (f (x + t • v) - f x - ⟪g, t • v⟫) * ‖t • v‖⁻¹)
       (𝓝[>] 0) (𝓝 0) := by
@@ -301,7 +301,7 @@ theorem SubderivWithinAt_eq_gradient {f'x : E} (hx : x ∈ interior s)
     intro t _ ht; rw [dist_eq_norm] at ht; rw [dist_eq_norm]
     have : dist (x + t • v) x < δ := by
       rw [dist_eq_norm, add_sub_cancel_left, norm_smul, ← (sub_zero t)]
-      apply lt_of_lt_of_eq ((mul_lt_mul_right (norm_sub_pos_iff.mpr neq)).mpr ht)
+      apply lt_of_lt_of_eq ((mul_lt_mul_iff_left₀ (norm_sub_pos_iff.mpr neq)).mpr ht)
       rw [mul_assoc, inv_mul_cancel₀ (norm_ne_zero_iff.mpr vneq), mul_one]
     specialize hδ this; rw [dist_eq_norm] at hδ
     have eq1 : ‖‖x + t • v - x‖⁻¹‖ = ‖t • v‖⁻¹ := by
@@ -353,7 +353,7 @@ theorem SubderivWithinAt_eq_gradient {f'x : E} (hx : x ∈ interior s)
       rw [this]
     rw [eq2, eq3, mul_eq_mul_right_iff];
     left; rw [inner_sub_left]
-  rw [mem_setOf, eq1, mul_le_mul_right tvpos]
+  rw [mem_setOf, eq1, mul_le_mul_iff_left₀ tvpos]
   apply sub_le_sub_right (le_sub_iff_add_le'.mpr (ineq1 mems))
 
 /-- Alternarive version for FDeriv --/
@@ -432,9 +432,9 @@ variable {f : E → ℝ} {g : E} {x : E} {s : Set E}
 theorem HasSubgradientAt.pos_smul {c : ℝ} (h : HasSubgradientAt f g x) (hc : 0 < c) :
     HasSubgradientAt (c • f) (c • g) x := by
   intro y; rw [inner_smul_left]
-  have ineq : c * f y ≥ c * (f x + inner g (y - x)) := (mul_le_mul_left hc).mpr (h y)
-  have eq : c * (f x + inner g (y - x)) = c * f x + c * inner g (y - x) :=
-    mul_add c (f x) (inner g (y - x))
+  have ineq : c * f y ≥ c * (f x + ⟪g, y - x⟫) := (mul_le_mul_iff_right₀ hc).mpr (h y)
+  have eq : c * (f x + ⟪g, y - x⟫) = c * f x + c * ⟪g, y - x⟫ :=
+    mul_add c (f x) (⟪g, y - x⟫)
   exact Eq.trans_le (id eq.symm) ineq
 
 theorem SubderivAt.pos_smul {c : ℝ} (hc : 0 < c) :
@@ -447,19 +447,19 @@ theorem SubderivAt.pos_smul {c : ℝ} (hc : 0 < c) :
       have neq : c ≠ 0 :=  ne_of_gt hc
       calc
         f y = c⁻¹ * (c * f y) := (eq_inv_mul_iff_mul_eq₀ neq).mpr rfl
-        _ ≥ c⁻¹ * (c * f x + inner g (y - x)) :=
+        _ ≥ c⁻¹ * (c * f x + ⟪g, y - x⟫) :=
           mul_le_mul_of_nonneg_left (hg y) (inv_nonneg.mpr (le_of_lt hc))
-        _ = f x + inner (c⁻¹ • g) (y - x) := by
+        _ = f x + ⟪c⁻¹ • g, y - x⟫ := by
           rw [mul_add, inner_smul_left, ← ((eq_inv_mul_iff_mul_eq₀ neq).mpr rfl)]
           rfl
     exact smul_inv_smul₀ (ne_of_gt hc) g
   rintro ⟨gg, hgg, eq⟩; intro y
   calc
-    c * f y ≥ c * (f x + inner gg (y - x)) := (mul_le_mul_left hc).mpr (hgg y)
-    _ = c * f x + c * inner gg (y - x) := mul_add c (f x) (inner gg (y - x))
-    _ = c * f x + inner (c • gg) (y - x) := by
+    c * f y ≥ c * (f x + ⟪gg, y - x⟫) := (mul_le_mul_iff_right₀ hc).mpr (hgg y)
+    _ = c * f x + c * ⟪gg, y - x⟫ := mul_add c (f x) (⟪gg, y - x⟫)
+    _ = c * f x + ⟪c • gg, y - x⟫ := by
       rw [inner_smul_left]; exact rfl
-    _ = c * f x + inner g (y - x) := by rw [← eq]
+    _ = c * f x + ⟪g, y - x⟫ := by rw [← eq]
 
 /-- Subderivatives of the sum of two functions is a subset of the sum of the
 subderivatives of the two functions --/
@@ -493,7 +493,7 @@ theorem SubderivAt.add {f₁ f₂ : E → ℝ} (h₁ : ConvexOn ℝ univ f₁) (
   rw [SubderivAt, SubderivAt, SubderivAt, Set.subset_def]
   intro g hg
   rw [Set.mem_setOf] at hg; rw [Set.mem_add]
-  let S₁ := {(x, y) : E × ℝ | y > f₁ (x + x₀) - f₁ x₀ - inner g x}
+  let S₁ := {(x, y) : E × ℝ | y > f₁ (x + x₀) - f₁ x₀ - ⟪g, x⟫}
   let S₂ := {(x, y) : E × ℝ | y ≤ f₂ x₀ - f₂ (x + x₀)}
 
   have hs1 : Convex ℝ S₁ := by
@@ -538,7 +538,7 @@ theorem SubderivAt.add {f₁ f₂ : E → ℝ} (h₁ : ConvexOn ℝ univ f₁) (
     apply le_trans (add_le_add hi hj) hh
   have hint : Disjoint S₁ S₂ := by
     rw [disjoint_iff]; by_contra joint
-    obtain ⟨⟨x, y⟩, ⟨hp1, hp2⟩⟩ := nmem_singleton_empty.mp joint
+    obtain ⟨⟨x, y⟩, ⟨hp1, hp2⟩⟩ := Set.notMem_singleton_empty.mp joint
     rw [Set.mem_setOf] at hp1 hp2
     specialize hg (x + x₀); rw [← add_sub, sub_self, add_zero] at hg
     apply not_le_of_gt ?_ hg
@@ -550,7 +550,7 @@ theorem SubderivAt.add {f₁ f₂ : E → ℝ} (h₁ : ConvexOn ℝ univ f₁) (
       f₁ x₀ + f₂ x₀ + ⟪g, x⟫_ℝ - (f₁ (x + x₀) + f₂ (x + x₀)) := by ring
     rwa [hh x₀, hh (x + x₀), ← eq]
   have hso : IsOpen S₁ := by
-    apply Continuous_epi_open (f₁ := fun x ↦ f₁ (x + x₀) - f₁ x₀ - inner g x)
+    apply Continuous_epi_open (f₁ := fun x ↦ f₁ (x + x₀) - f₁ x₀ - ⟪g, x⟫)
     apply ContinuousOn.sub
     · apply ContinuousOn.sub
       · apply ContinuousOn.comp (g := f₁) (f := fun x ↦ x + x₀) (t := univ) hcon
@@ -560,19 +560,16 @@ theorem SubderivAt.add {f₁ f₂ : E → ℝ} (h₁ : ConvexOn ℝ univ f₁) (
     apply ContinuousOn.inner continuousOn_const continuousOn_id
 
   obtain ⟨f, c, ⟨hsl, hsr⟩⟩ := geometric_hahn_banach_open hs1 hso hs2 hint
-  have eq : ∃ a : E, ∃ b : ℝ, ∀ (p : E × ℝ), f p = inner a p.1 + b * p.2 := by
+  have eq : ∃ a : E, ∃ b : ℝ, ∀ (p : E × ℝ), f p = ⟪a, p.1⟫ + b * p.2 := by
     let f1 := ContinuousLinearMap.comp f (ContinuousLinearMap.inl ℝ E ℝ)
     let f2 := ContinuousLinearMap.comp f (ContinuousLinearMap.inr ℝ E ℝ)
     use (toDual ℝ E).symm f1
-    use (toDual ℝ ℝ).symm f2
+    use (f2 1)
     intro p
-    have : ((toDual ℝ ℝ).symm f2) * p.2 = inner (((toDual ℝ ℝ).symm f2)) p.2 := by
-      simp [f2]
-    have : ((toDual ℝ ℝ).symm f2) * p.2 = f2 p.2 := by
-      rw [this]
-      simp only [toDual_symm_apply, ContinuousLinearMap.coe_comp', Function.comp_apply,
-        ContinuousLinearMap.inl_apply, ContinuousLinearMap.inr_apply]
-    rw [this]; simp [f1, f2]
+    have hmul : (f2 1) * p.2 = f2 p.2 := by
+      have h := f2.map_smul p.2 (1 : ℝ)
+      simpa [smul_eq_mul, mul_comm] using h.symm
+    rw [hmul]; simp [f1, f2]
     have : (p.1, (0 : ℝ)) + ((0 : E), p.2) = p := by simp
     nth_rw 1 [← this]; rw [ContinuousLinearMap.map_add]
   rcases eq with ⟨a, b, hab⟩
@@ -594,11 +591,9 @@ theorem SubderivAt.add {f₁ f₂ : E → ℝ} (h₁ : ConvexOn ℝ univ f₁) (
     push_neg at hb
     have pos : (c / (2 * b)) > 0 := by
       apply div_pos_of_neg_of_neg hc (by linarith)
-    specialize (htp (c / (2 * b)) pos); field_simp [hb] at htp
-    have eq : b * c / (2 * b) = c / 2 := by
-      ring_nf; simp; field_simp [hb]
-      rw [mul_div_right_comm, div_self (by linarith), one_mul]
-    rw [eq] at htp; linarith
+    specialize (htp (c / (2 * b)) pos)
+    have hb0 : b ≠ 0 := ne_of_lt hb
+    field_simp [hb0] at htp; linarith
   have bleq0 : b < 0 := by
     rw [ceq0] at htp
     specialize htp 1 (by linarith); rw [mul_one] at htp; linarith
@@ -653,7 +648,7 @@ theorem SubderivAt_of_norm_at_zero : SubderivAt (fun (x : E) => ‖x‖) 0 = {g 
     apply not_lt.mpr hg this
   intro hg y
   calc
-    ‖(0 : E)‖ + inner g (y - 0) = inner g y := by simp only [norm_zero, zero_add, sub_zero]
+    ‖(0 : E)‖ + ⟪g, y - 0⟫ = ⟪g, y⟫ := by simp only [norm_zero, zero_add, sub_zero]
     _ ≤ ‖g‖ * ‖y‖ := real_inner_le_norm g y
     _ ≤ 1 * ‖y‖ := mul_le_mul_of_nonneg_right hg (norm_nonneg y)
     _ = ‖y‖ := by simp only [one_mul]
@@ -681,12 +676,12 @@ theorem SubderivAt_abs (x : ℝ) :
     · by_contra gne
       by_cases glt : g < 1
       · specialize hg 0
+        have hinner : ⟪g, -x⟫_ℝ = g * (-x) := by simp; grind
         have ineq : (0 : ℝ) < 0 := by
           calc
-            0 ≥ x + g * (-x):= by
-              simp only [abs_zero, zero_sub, abs_pos_of_pos, abs_of_pos hx] at hg
-              have : inner g (-x) = g * (-x)  := by rfl
-              rwa [this] at hg
+            0 ≥ x + g * (-x) := by
+              simp only [abs_zero, zero_sub, abs_of_pos hx] at hg
+              rwa [hinner] at hg
             _ = x * (1 - g) := by ring
             _ > 0 := mul_pos hx (by linarith)
         exact LT.lt.false ineq
@@ -696,7 +691,7 @@ theorem SubderivAt_abs (x : ℝ) :
       apply glt
       have h1: g ≤ 1 := by
         calc
-          g = inner g 1 := by simp
+          g = ⟪g, 1⟫ := by simp
           _ ≤ 1 := hg
       simp only [Real.sign_of_pos hx] at gne
       exact Ne.lt_of_le gne h1
@@ -706,14 +701,14 @@ theorem SubderivAt_abs (x : ℝ) :
     by_cases glt : g < -1
     · specialize hg (x - 1)
       have : x - 1 < 0 := by linarith
-      simp only [abs_of_neg this, abs_of_neg hx, abs_zero, zero_sub] at hg
+      simp only [abs_of_neg this, abs_of_neg hx] at hg
       have : -g ≤ 1 := by
         calc
-          -g = inner g (x - 1 - x) := by simp
+          -g = ⟪g, x - 1 - x⟫ := by simp
           _ ≤ 1 := by linarith [hg]
       linarith
     specialize hg 0
-    have eq1 : inner g (-x) = g * (-x) := rfl
+    have eq1 : ⟪g, -x⟫_ℝ = g * (-x) := by simp; grind
     have eq2 : -x + g * -x = -x * (1 + g) := by ring
     simp only [abs_zero, zero_sub, abs_of_neg hx, eq1, eq2] at hg
     have : -x * (1 + g) > 0 := by
@@ -725,13 +720,13 @@ theorem SubderivAt_abs (x : ℝ) :
   by_cases hx : x > 0
   · simp only [Real.sign_of_pos hx] at hg
     calc
-      |x| + inner g (y - x) = x + inner 1 (y - x) := by rw [abs_of_pos hx, hg]
+      |x| + ⟪g, y - x⟫ = x + ⟪1, y - x⟫ := by rw [abs_of_pos hx, hg]
       _ = y := by simp
       _ ≤ |y| := le_abs_self y
   have hx : x < 0 := Ne.lt_of_le h (not_lt.mp hx)
   simp only [Real.sign_of_neg hx] at hg
   calc
-    |x| + inner g (y - x) = -x + inner (-1) (y - x) := by rw [abs_of_neg hx, hg]
+    |x| + ⟪g, y - x⟫ = -x + ⟪-1, y - x⟫ := by rw [abs_of_neg hx, hg]
     _ = -y := by simp; ring
     _ ≤ |y| := neg_le_abs y
 
