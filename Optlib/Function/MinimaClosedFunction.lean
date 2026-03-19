@@ -6,7 +6,7 @@ Authors: Wanyi He
 import Mathlib.Analysis.Convex.Basic
 import Mathlib.Topology.MetricSpace.Basic
 import Mathlib.Topology.MetricSpace.Bounded
-import Mathlib.Topology.Semicontinuous
+import Mathlib.Topology.Semicontinuity.Basic
 import Mathlib.Topology.Sequences
 
 /-!
@@ -39,9 +39,9 @@ private lemma l0 {f : E → F}(y : F) (h : (f ⁻¹' Set.Iic y).Nonempty) :
     constructor
     · exact ⟨x', xsub, rfl⟩
     rcases ynsub with ⟨x, xnsub, xeq⟩
-    apply le_trans xsub (Eq.trans_ge xeq (le_of_lt _))
-    simp only [← Set.preimage_compl, Set.compl_Iic] at xnsub
-    assumption
+    simp_rw [Set.mem_compl_iff, Set.mem_preimage, Set.mem_Iic, not_le] at xnsub
+    rw [← xeq]
+    exact le_trans xsub (le_of_lt xnsub)
   calc
     sInf {f x | x ∈ f ⁻¹' Set.Iic y} =
       sInf {f x | x ∈ f ⁻¹' Set.Iic y} ⊓ sInf {f x | x ∈ (f ⁻¹' Set.Iic y)ᶜ} :=
@@ -131,8 +131,8 @@ theorem isMinOn_unique {x y : E} (hf' : strong_quasi f 𝕜)
   have eqone : a + (1 - a) = 1 := add_sub_cancel a 1
   have lta' : 0 < 1 - a := sub_pos_of_lt alt
   have h : f (a • x + (1 - a) • y) < f y := by
-    apply Eq.trans_gt (max_eq_right (hx trivial))
-    apply hf' neq lta lta' eqone
+    have h₁ := hf' neq lta lta' eqone
+    rwa [max_eq_right (hx (mem_univ y))] at h₁
   simp only [isMinOn_iff] at hy
   specialize hy (a • x + (1 - a) • y) trivial
   apply not_le_of_gt h hy

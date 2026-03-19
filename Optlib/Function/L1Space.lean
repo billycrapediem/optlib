@@ -54,7 +54,7 @@ open scoped Pointwise Module
 
 /--A noncomputable function mapping basis vectors to the `l₁` space.-/
 noncomputable def f : Fin (Module.finrank ℝ α) → PiLp 1 (fun _ : Fin (Module.finrank ℝ α) => ℝ) :=
-  fun i j => if i = j then ‖(Module.finBasis ℝ α) i‖ else 0
+  fun i => WithLp.toLp 1 fun j => if i = j then ‖(Module.finBasis ℝ α) i‖ else 0
 
 noncomputable def σ := Module.Basis.constrL (Module.finBasis ℝ α) f
 
@@ -64,10 +64,10 @@ theorem sigma_orthogonal_same_index {i j : Fin (Module.finrank ℝ α)} (h : i =
     (σ ((Module.finBasis ℝ α) i)) j = ‖(Module.finBasis ℝ α) i‖ := by simp[σ,f,h]
 
 theorem sigma_orthogonal_diff_index {i j : Fin (Module.finrank ℝ α)} (h : i ≠ j) :
-    (σ ((Module.finBasis ℝ α) i)) j = 0 := by simp[σ,f,h]
+    (σ ((Module.finBasis ℝ α) i)) j = 0 := by simp [σ, f, h]
 
 theorem sigma_apply_basis (i : Fin (Module.finrank ℝ α)) :
-    σ ((Module.finBasis ℝ α) i) = fun j => if i = j then ‖(Module.finBasis ℝ α) i‖ else 0 := by
+    σ ((Module.finBasis ℝ α) i) = WithLp.toLp 1 fun j => if i = j then ‖(Module.finBasis ℝ α) i‖ else 0 := by
   ext j
   simp[σ,f];
 
@@ -89,19 +89,16 @@ theorem sigma_norm_apply : ∀ x , ∀ j , ∑ i  , (((Module.finBasis ℝ α).r
 
 theorem sigma_decompose_apply : ∀ x , ∀ j , (σ x) j =
     ∑ i , (((Module.finBasis ℝ α).repr x) i) • σ ((Module.finBasis ℝ α) i) j:= by
-  intro x
-  rw[← PiLp.ext_iff]
+  intro x j
   calc
-    _ = σ (∑ i , (((Module.finBasis ℝ α).repr x) i) • (Module.finBasis ℝ α) i):= by
-      congr;exact Eq.symm (Module.Basis.sum_repr (Module.finBasis ℝ α) x)
-    _ = ∑ i , σ ((((Module.finBasis ℝ α).repr x) i) • (Module.finBasis ℝ α) i):= by
+    (σ x) j
+        = (σ (∑ i , (((Module.finBasis ℝ α).repr x) i) • (Module.finBasis ℝ α) i)) j := by
+      rw [← Module.Basis.sum_repr (Module.finBasis ℝ α) x]
+      rw?
+    _ = (∑ i , σ ((((Module.finBasis ℝ α).repr x) i) • (Module.finBasis ℝ α) i)) j := by
       simp only [map_sum, map_smul]
-    _ = _ := by
-      ext j;
-      repeat rw[Finset.sum_apply]
-      congr
-      ext x
-      simp only [map_smul, PiLp.smul_apply, smul_eq_mul]
+    _ = ∑ i , (((Module.finBasis ℝ α).repr x) i) • (σ ((Module.finBasis ℝ α) i)) j := by
+      simp_rw [WithLp.ofLp_sum, Fintype.sum_apply, map_smul, PiLp.smul_apply]
 
 /--
 For any element x in the vector space α, the norm of the image of x
@@ -312,11 +309,10 @@ theorem sigma_is_injective : Function.Injective σ (α := α) := by
   change σ z = 0 at h
   rw[hz] at h
   simp at h
-  have hi :∀ i , (∑ x : Fin n, (bs.repr z) x • σ (bs x)) i = (bs.repr z) i * ‖(Module.finBasis ℝ α) i‖:= by
+  have hi : ∀ i, (∑ x : Fin n, (bs.repr z) x • σ (bs x)) i = (bs.repr z) i * ‖(Module.finBasis ℝ α) i‖ := by
     intro i
-    repeat rw[Finset.sum_apply];
-    simp only [PiLp.smul_apply]
-    rw[sigma_norm_apply]
+    simp_rw [WithLp.ofLp_sum, Fintype.sum_apply, PiLp.smul_apply]
+    exact sigma_norm_apply z i
   show z = 0
   rw[hz]
   apply Fintype.sum_eq_zero (fun a => (bs.repr z) a • bs a)
@@ -325,5 +321,6 @@ theorem sigma_is_injective : Function.Injective σ (α := α) := by
   left
   have : ‖(Module.finBasis ℝ α) i‖ ≠ 0:= norm_ne_zero_iff.mpr $ Module.Basis.ne_zero (Module.finBasis ℝ α) i
   have h1 : (bs.repr z) i * ‖(Module.finBasis ℝ α) i‖ = 0 := by
-    rw[← hi , h, PiLp.zero_apply]
+    rw [← hi i]
+    simpa using congrArg (fun v : PiLp 1 (fun _ : Fin n => ℝ) => v i) h
   apply eq_zero_of_ne_zero_of_mul_right_eq_zero this h1

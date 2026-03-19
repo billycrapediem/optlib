@@ -329,7 +329,7 @@ theorem SubderivWithinAt_eq_gradient {f'x : E} (hx : x ∈ interior s)
     rw [mem_ball_iff_norm, sub_zero] at tball
     rw [mem_ball_iff_norm, add_sub_cancel_left, norm_smul]
     have : ‖t‖ * ‖v‖ < ε * ‖v‖⁻¹ * ‖v‖ := by
-      apply (mul_lt_mul_right (norm_sub_pos_iff.mpr neq)).mpr tball
+      simpa [mul_assoc] using mul_lt_mul_of_pos_right tball (norm_sub_pos_iff.mpr neq)
     rwa [mul_assoc, inv_mul_cancel₀ (norm_ne_zero_iff.mpr vneq), mul_one] at this
   obtain ineq1 := hg' (x + t • v); rw [add_sub_cancel_left] at ineq1
   have eq1 : ‖v‖ = (⟪g', t • v⟫ - ⟪g, t • v⟫) * ‖t • v‖⁻¹ := by

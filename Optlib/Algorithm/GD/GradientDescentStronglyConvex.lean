@@ -89,7 +89,8 @@ theorem Strong_convex_Lipschitz_smooth (hsc: StrongConvexOn univ m f) (mp : m > 
       have h1 : ‖u‖ ^ 2 + m * l * ‖v‖ ^ 2 ≤ (m + l) * ⟪u, v⟫_ℝ := by
         have h0' := add_le_add_right h0 (2 * m * ⟪u, v⟫_ℝ)
         ring_nf at h0'
-        simpa [add_mul] using h0'
+        rw [add_comm] at h0'
+        simpa [add_mul, mul_add, mul_comm] using h0'
       have hdiv :
           (‖u‖ ^ 2 + m * l * ‖v‖ ^ 2) / (m + l) ≤ ⟪u, v⟫_ℝ := by
         have h1' : ‖u‖ ^ 2 + m * l * ‖v‖ ^ 2 ≤ ⟪u, v⟫_ℝ * (m + l) := by
@@ -187,18 +188,23 @@ lemma gradient_method_strong_convex (hm : m > 0) (min : IsMinOn f univ xm)
           apply Strong_convex_Lipschitz_smooth; apply hsc; apply hm;
           apply alg.diff; apply alg.smooth; apply alg.hl
         rw [sub_mul, one_mul, mul_sub, sub_mul, ← add_comm_sub, ← pow_two]
-        apply add_le_add_right
-        rw [sub_eq_add_neg, sub_sub]; rw [sub_eq_add_neg (‖alg.x k - xm‖ ^ 2)]
-        apply add_le_add_left; apply neg_le_neg
-        calc
-          _ =
+        -- Peel `+ alg.a ^ 2 * ‖f'‖^2`, then peel `‖x - xm‖^2` (need `+` for `add_le_add_*`)
+        refine add_le_add_left ?_ _
+        simp only [sub_eq_add_neg]
+        conv_rhs => rw [add_assoc]
+        refine add_le_add_right ?_ (‖alg.x k + -xm‖ ^ 2)
+        have hcore :
             2 * alg.a * ((m * alg.l / (m + alg.l)) * ‖alg.x k - xm‖ ^ 2 +
-                (1 / (m + alg.l)) * ‖f' (alg.x k)‖ ^ 2) := by
-              field_simp
-          _ ≤ 2 * alg.a * ⟪alg.x k - xm, f' (alg.x k)⟫_ℝ := by
-            rw [ge_iff_le] at this
-            have twoapos : 0 < 2 * alg.a := by linarith [alg.step₁]
-            rw [mul_le_mul_iff_right₀ twoapos]; apply this
+                (1 / (m + alg.l)) * ‖f' (alg.x k)‖ ^ 2) ≤
+              2 * alg.a * ⟪alg.x k - xm, f' (alg.x k)⟫_ℝ := by
+          rw [ge_iff_le] at this
+          have twoapos : 0 < 2 * alg.a := by linarith [alg.step₁]
+          rw [mul_le_mul_iff_right₀ twoapos]
+          exact this
+        have hneg := neg_le_neg hcore
+        convert hneg using 1
+        · simp [sub_eq_add_neg, mul_left_comm, mul_comm]
+        · simp [sub_eq_add_neg, div_eq_mul_inv, mul_left_comm, mul_comm]; ring_nf
       _ ≤ (1 - alg.a * (2 * m * alg.l / (m + alg.l))) * ‖alg.x k - xm‖ ^ 2 := by
         simp
         have eq2 : alg.a * (alg.a - 2 / (m + alg.l)) ≤ 0 := by

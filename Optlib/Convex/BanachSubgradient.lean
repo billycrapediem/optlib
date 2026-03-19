@@ -8,7 +8,7 @@ import Mathlib.Algebra.Order.Ring.Star
 import Mathlib.Analysis.InnerProductSpace.Basic
 import Mathlib.Analysis.Normed.Operator.Bilinear
 import Mathlib.Analysis.Normed.Order.Lattice
-import Mathlib.Analysis.NormedSpace.HahnBanach.Separation
+import Mathlib.Analysis.LocallyConvex.Separation
 import Mathlib.Data.Real.StarOrdered
 import Mathlib.GroupTheory.MonoidLocalization.Basic
 import Mathlib.LinearAlgebra.Dual.Lemmas
@@ -181,9 +181,9 @@ theorem Banach_SubderivWithinAt.Nonempty (hf : ConvexOn ℝ s f)
     have hfa : f a.1 = a.2 := by linarith [ha.2]
     let an : ℕ → E × ℝ := fun n => (a.1, f a.1 + 1 / (n + 1))
     have can2 : Tendsto (fun n => (an n).2) atTop (nhds (f a.1)) := by
-      obtain hh := Tendsto.add
-        (tendsto_const_nhds) (tendsto_one_div_add_atTop_nhds_zero_nat)
-      simp only [add_zero] at hh; exact hh
+      have hconst : Tendsto (fun (_ : ℕ) => f a.1) atTop (nhds (f a.1)) := tendsto_const_nhds
+      convert Tendsto.add hconst tendsto_one_div_add_atTop_nhds_zero_nat using 1
+      · simp
     have hxn : ∀ (n : ℕ), h' ((an n).1 - x) + f x ≤ (an n).2 := by
       intro n
       have : (1 : ℝ) / (n + 1) > 0 := one_div_pos.mpr (by linarith)

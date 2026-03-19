@@ -112,11 +112,11 @@ lemma Bounded_of_UpperBounded (hf : ConvexOn ℝ (ball x₀ r) f)
       _ = -|m| - 2 * (|f x₀| + 1):= neg_add' |m| (2 * (|f x₀| + 1))
       _ <  -f y + 2 * f x₀ := by
         apply add_lt_add_of_le_of_lt fy_pos
-        rw[← mul_neg]
-        simp only [Nat.ofNat_pos, mul_lt_mul_left,neg_add']
-        calc
-          _ < -|f x₀| :=by simp only [sub_lt_self_iff, zero_lt_one]
-          _ ≤ _ := neg_abs_le (f x₀)
+        -- goal: -(2 * (|f x₀| + 1)) < 2 * f x₀, i.e. -( |f x₀| + 1) < f x₀
+        have hlt : -( |f x₀| + 1) < -|f x₀| := by linarith
+        have hle : -|f x₀| ≤ f x₀ := neg_abs_le (f x₀)
+        rw [← mul_neg]
+        exact mul_lt_mul_of_pos_left (lt_of_lt_of_le hlt hle) (by norm_num)
       _ ≤ _ := h'
   · calc
       _ ≤ m := by apply hm x hx.1

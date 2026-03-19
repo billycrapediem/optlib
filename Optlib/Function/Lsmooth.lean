@@ -207,13 +207,14 @@ theorem lipschitz_to_lnorm_sub_convex (hs : Convex ℝ s)
   have H₂ : ∀ x ∈ s, ∀ y ∈ s, ⟪g' x - g' y, x - y⟫_ℝ ≥ (0 : ℝ) := by
     intro x hx y hy
     calc
-    _ = l.1 * (⟪x - y, x - y⟫_ℝ) - ⟪f' x - f' y, x - y⟫_ℝ := by
-      simp [g']
+    _ = ↑l * ‖x - y‖ ^ 2 - ⟪f' x - f' y, x - y⟫_ℝ := by
+      simp only [g']
       rw [← sub_add, sub_right_comm, sub_add, inner_sub_left, ← smul_sub, inner_smul_left]
       simp only [conj_trivial]
+      rw [real_inner_self_eq_norm_sq]
+      congr 1
     _ = l * ‖x - y‖ ^ 2 - ⟪f' x - f' y, x - y⟫_ℝ := by
-      simp; left
-      apply real_inner_self_eq_norm_sq
+      simp
     _ ≥ l * ‖x - y‖ ^ 2 - ‖f' x - f' y‖ * ‖x - y‖ := by
       apply add_le_add; linarith
       simp
@@ -285,7 +286,8 @@ theorem convex_to_lower {l : ℝ} (h₁ : ∀ x : E, HasGradientAt f (f' x) x)
         _ = (l / 2) * ‖a • x₁ + b • y₁‖ ^ 2 - f (a • x₁ + b • y₁) +
             (a * ⟪f' s, x₁⟫_ℝ + b * ⟪f' s, y₁⟫_ℝ) := by ring_nf
         _ ≤ a • (l / 2 * ‖x₁‖ ^ 2 - f x₁) + b • (l / 2 * ‖y₁‖ ^ 2 - f y₁) +
-            (a * ⟪f' s, x₁⟫_ℝ + b * ⟪f' s, y₁⟫_ℝ) := by apply add_le_add_right h₂'
+            (a * ⟪f' s, x₁⟫_ℝ + b * ⟪f' s, y₁⟫_ℝ) := by
+          exact add_le_add_left h₂' (a * ⟪f' s, x₁⟫_ℝ + b * ⟪f' s, y₁⟫_ℝ)
         _ = a • (l / 2 * ‖x₁‖ ^ 2 - (f x₁ - ⟪f' s, x₁⟫_ℝ)) + b •
             (l / 2 * ‖y₁‖ ^ 2 - (f y₁ - ⟪f' s, y₁⟫_ℝ)) := by simp; ring_nf
   let gs' := fun s ↦ (fun z ↦ l • z - (fs' s z))

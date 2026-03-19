@@ -46,8 +46,8 @@ lemma bounded_lowersemicontinuous_to_epi_closed (f : E → ℝ) (hc : LowerSemic
   rw [Prod.tendsto_iff] at xntend
   rcases xntend with ⟨xtend, ytend⟩
   rw [LowerSemicontinuousOn] at hc
-  specialize hc p.1
-  simp at hc; rw [LowerSemicontinuousWithinAt, nhdsWithin_univ] at hc
+  specialize hc p.1 (mem_univ p.1)
+  simp only [ SemicontinuousWithinAt, nhdsWithin_univ] at hc
   let linf := liminf (fun n ↦ f (xn n).1) atTop
   have aux : Tendsto (fun n ↦ (xn n).2) atTop (nhds p.2) ↔
         ∀ ε > 0, ∃ N, ∀ n ≥ N, (fun n ↦ (xn n).2) n ∈ Ioo (p.2 - ε) (p.2 + ε) := by
@@ -554,30 +554,24 @@ variable {x : E} {y : F} {z : WithLp 2 (E × F)}
 
 open Set Bornology Filter BigOperators Topology
 
-lemma fst_norm_le_prod_L2 (z : WithLp 2 (E × F)) : ‖z.1‖ ≤ ‖z‖ := by
-  have h : ‖z.1‖ ^ 2 ≤ ‖z‖ ^ 2 := by linarith [WithLp.prod_norm_sq_eq_of_L2 z, sq_nonneg ‖z.2‖]
-  apply nonneg_le_nonneg_of_sq_le_sq (norm_nonneg _)
-  rwa [← pow_two, ← pow_two]
+lemma fst_norm_le_prod_L2 (z : WithLp 2 (E × F)) : ‖z.fst‖ ≤ ‖z‖ :=
+  WithLp.norm_fst_le E z
 
-lemma snd_norm_le_prod_L2 (z : WithLp 2 (E × F)) : ‖z.2‖ ≤ ‖z‖ := by
-  have h : ‖z.2‖ ^ 2 ≤ ‖z‖ ^ 2 := by linarith [WithLp.prod_norm_sq_eq_of_L2 z, sq_nonneg ‖z.1‖]
-  apply nonneg_le_nonneg_of_sq_le_sq (norm_nonneg _)
-  rwa [← pow_two, ← pow_two]
+lemma snd_norm_le_prod_L2 (z : WithLp 2 (E × F)) : ‖z.snd‖ ≤ ‖z‖ :=
+  WithLp.norm_snd_le E z
 
-lemma prod_norm_le_block_sum_L2 (z : WithLp 2 (E × F)) : ‖z‖ ≤ ‖z.1‖ + ‖z.2‖ := by
-  have : ‖z‖ ^ 2 ≤ (‖z.1‖ + ‖z.2‖) ^ 2:= by
+lemma prod_norm_le_block_sum_L2 (z : WithLp 2 (E × F)) : ‖z‖ ≤ ‖z.fst‖ + ‖z.snd‖ := by
+  have : ‖z‖ ^ 2 ≤ (‖z.fst‖ + ‖z.snd‖) ^ 2 := by
     simp [WithLp.prod_norm_sq_eq_of_L2, add_sq]
     positivity
-  apply nonneg_le_nonneg_of_sq_le_sq (Left.add_nonneg (norm_nonneg z.1) (norm_nonneg z.2))
+  apply nonneg_le_nonneg_of_sq_le_sq (Left.add_nonneg (norm_nonneg z.fst) (norm_nonneg z.snd))
   rwa [← pow_two, ← pow_two]
 
-lemma norm_prod_right_zero (x : E) :
-    @norm (WithLp 2 (E × F)) _ ((x, (0 : F)) : WithLp 2 (E × F)) = ‖x‖ := by
-  rw [WithLp.prod_norm_eq_of_L2] ; simp
+lemma norm_prod_right_zero (x : E) : ‖WithLp.toLp 2 (x, (0 : F))‖ = ‖x‖ :=
+  WithLp.norm_toLp_fst 2 E F x
 
-lemma norm_prod_left_zero (y : F):
-    @norm (WithLp 2 (E × F)) _ ((0 : E), y) = ‖y‖ := by
-  rw [WithLp.prod_norm_eq_of_L2] ; simp
+lemma norm_prod_left_zero (y : F) : ‖WithLp.toLp 2 ((0 : E), y)‖ = ‖y‖ :=
+  WithLp.norm_toLp_snd 2 E F y
 
 end ProdLp
 
@@ -598,17 +592,18 @@ instance instNormedSpaceProdL2 : NormedSpace ℝ (WithLp 2 (E × F)) where
     exact norm_smul_le a b
 
 instance instIsBoundedLinearMapL2equiv :
-    @IsBoundedLinearMap ℝ _ (E × F) _ _ (WithLp 2 (E × F)) _ _ id where
-  map_add := fun x ↦ congrFun rfl
-  map_smul := fun c ↦ congrFun rfl
+    IsBoundedLinearMap ℝ (WithLp.toLp 2 : (E × F) → WithLp 2 (E × F)) where
+  map_add := fun _ _ => rfl
+  map_smul := fun _ _ => rfl
   bound := by
-    use 2
-    constructor
-    · norm_num
-    · intro z
-      rw [Prod.norm_def]
-      have h := prod_norm_le_block_sum_L2 z
-      simp only [id_eq]
-      linarith [h, le_max_left ‖z.1‖ ‖z.2‖, le_max_right ‖z.1‖ ‖z.2‖]
+    refine ⟨2, by norm_num, fun z => ?_⟩
+    rw [Prod.norm_def]
+    have hsum : ‖WithLp.toLp 2 z‖ ≤ ‖z.1‖ + ‖z.2‖ := by
+      simpa [WithLp.toLp_fst, WithLp.toLp_snd] using
+        prod_norm_le_block_sum_L2 (WithLp.toLp 2 z)
+    have hmax : ‖z.1‖ + ‖z.2‖ ≤ 2 * ‖z‖ := by
+      simp only [Prod.norm_def]
+      nlinarith [le_max_left ‖z.1‖ ‖z.2‖, le_max_right ‖z.1‖ ‖z.2‖]
+    exact le_trans hsum hmax
 
 end ProdLp_diff

@@ -407,8 +407,9 @@ lemma convex_of_norm_sq {s : Set E} (x : E) (conv: Convex ℝ s) :
       rw [norm_smul, norm_smul, mul_pow, mul_pow]; simp
       nth_rw 3 [← mul_one a]; nth_rw 3 [← one_mul b]
       rw [← absum1]; ring_nf; rw [add_right_comm]
-      apply add_le_add_right
-      rw [add_comm]; apply add_le_add_right
+      rw [add_le_add_iff_right (a ^ 2 * ‖u‖ ^ 2)]
+      rw [add_comm]
+      rw [add_le_add_iff_right (b ^ 2 * ‖v‖ ^ 2)]
       calc
         ⟪a • u, b • v⟫_ℝ * 2
             ≤ ‖a • u‖ * ‖b • v‖ * 2 := by

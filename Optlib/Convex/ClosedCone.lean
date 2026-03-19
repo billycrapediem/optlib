@@ -20,7 +20,8 @@ This file contains the following parts of closed cone.
 
 section ClosedCone
 
-open Finset Matrix Topology
+open Finset Matrix Topology WithLp
+open scoped Matrix
 
 variable {n : ℕ} {s : Finset ℕ} {V : ℕ → (EuclideanSpace ℝ (Fin n))}
 variable {x : EuclideanSpace ℝ (Fin n)}
@@ -105,11 +106,21 @@ lemma cone_eq_finite_union (s : Finset ℕ) (V : ℕ → (EuclideanSpace ℝ (Fi
 lemma closed_conic_idp (s : Finset ℕ) (V : s → (EuclideanSpace ℝ (Fin n)))
     (idp : LinearIndependent ℝ V) : IsClosed (cone' s V) := by
   simp [cone']
-  let M : Matrix s (Fin n) ℝ := fun i ↦ V i
+  let M : Matrix s (Fin n) ℝ := fun i j ↦ V i j
   let f := fun x : s → ℝ ↦ Finset.sum univ (fun i => x i • V i)
-  let F := Matrix.mulVecLin Mᵀ
-  have eq2 : f = F := by
-      simp [F]; ext x j; simp; apply Finset.sum_apply
+  let F := (WithLp.linearEquiv 2 ℝ (Fin n → ℝ)).symm.toLinearMap.comp (Matrix.mulVecLin Mᵀ)
+  have eq2 : f = ⇑F := by
+    funext x
+    ext j
+    have lhs :
+        (f x).ofLp j = Finset.sum Finset.univ fun i : s ↦ x i * (V i).ofLp j := by
+      dsimp [f]
+      rw [WithLp.ofLp_sum, Finset.sum_apply]
+      simp [PiLp.smul_apply, smul_eq_mul]
+    have rhs : (F x).ofLp j = (Mᵀ *ᵥ x) j := by
+      dsimp [F]
+    rw [lhs, rhs]
+    simp only [mulVec, dotProduct, Finset.sum_apply, M, transpose_apply, mul_comm]
   show IsClosed (f '' (quadrant' s))
   rw [eq2]
   have iscF : Continuous f := by
@@ -130,10 +141,15 @@ lemma closed_conic_idp (s : Finset ℕ) (V : s → (EuclideanSpace ℝ (Fin n)))
   rw [eq2] at iscF
   have isclosed : IsClosedMap F := by
     have injF : Function.Injective F := by
-      simp only [F]
-      show Function.Injective Mᵀ.mulVec
-      rw [Matrix.mulVec_injective_iff]; simp
-      apply idp
+      intro x y h
+      have hmul : Mᵀ.mulVecLin x = Mᵀ.mulVecLin y :=
+        (LinearEquiv.injective (WithLp.linearEquiv 2 ℝ (Fin n → ℝ)).symm)
+          (by simpa [F, LinearMap.coe_comp, Function.comp_apply] using h)
+      have hrow : LinearIndependent ℝ M.row :=
+        idp.map' (WithLp.linearEquiv 2 ℝ (Fin n → ℝ)).toLinearMap
+          (LinearMap.ker_eq_bot.2 (LinearEquiv.injective (WithLp.linearEquiv 2 ℝ (Fin n → ℝ))))
+      refine (Matrix.vecMul_injective_iff.2 hrow : Function.Injective M.vecMul) ?_
+      simpa [Matrix.mulVecLin_transpose, Matrix.vecMulLinear_apply, Matrix.coe_vecMulLinear] using hmul
     have closeEmbF: IsClosedEmbedding F := by
       apply LinearMap.isClosedEmbedding_of_injective
       rw [LinearMap.ker_eq_bot]

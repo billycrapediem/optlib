@@ -10,8 +10,8 @@ package optlib where
 @[default_target]
 lean_lib Optlib where
 
-require mathlib from git "https://github.com/leanprover-community/mathlib4"@"f897ebcf72cd16f89ab4577d0c826cd14afaafc7"
+require mathlib from git "https://github.com/leanprover-community/mathlib4"@"8f9d9cff6bd728b17a24e163c9402775d9e6a365"
 
 meta if get_config? env = some "CI_BUILD" then
 require «doc-gen4» from git
-  "https://github.com/leanprover/doc-gen4.git" @ "c2156beadb1a4d049ff3b19fe396c5403025aac5"
+  "https://github.com/leanprover/doc-gen4.git" @ "a41d5ebebfa77afe737fec8de8ad03fc8b08fdff"
